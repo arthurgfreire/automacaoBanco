@@ -24,7 +24,7 @@ public class automacao {
 		System.out.print("Digite o número da opção: ");
 		
 		int opcao = scanner.nextInt();
-		scanner.close();
+		scanner.nextLine(); // Consumir quebra de linha
 		
 		String tipoGeracao = "";
 		switch (opcao) {
@@ -49,9 +49,48 @@ public class automacao {
 		
 		// Se a opção for Conecta, executar a geração do arquivo
 		if (opcao == 2) {
-			try {
-				// Código a ser extraído (linhas 8-43)
-				String codigoPropostaConecta = 
+			conecta(scanner);
+		} else {
+			System.out.println("Geração para o tipo '" + tipoGeracao + "' ainda não implementada.");
+			scanner.close();
+		}
+	}
+
+	private static void conecta(Scanner scanner) {
+		// Perguntar sobre fluxo de entrada (obrigatório)
+		System.out.println("\n=== FLUXO DE ENTRADA ===");
+		System.out.print("Existe fluxo de entrada? (s/n): ");
+		String respostaEntrada = scanner.nextLine().trim().toLowerCase();
+		
+		String arquivoEntrada = null;
+		if (respostaEntrada.equals("s") || respostaEntrada.equals("sim")) {
+			arquivoEntrada = selecionarArquivo(scanner, "entrada");
+			if (arquivoEntrada == null) {
+				System.err.println("Fluxo de entrada é obrigatório. Encerrando...");
+				return;
+			}
+			System.out.println("Arquivo de entrada selecionado: " + arquivoEntrada);
+		} else {
+			System.err.println("Fluxo de entrada é obrigatório. Encerrando...");
+			return;
+		}
+		
+		// Perguntar sobre fluxo de saída (opcional)
+		System.out.println("\n=== FLUXO DE SAÍDA ===");
+		System.out.print("Existe fluxo de saída? (s/n): ");
+		String respostaSaida = scanner.nextLine().trim().toLowerCase();
+		
+		String arquivoSaida = null;
+		if (respostaSaida.equals("s") || respostaSaida.equals("sim")) {
+			arquivoSaida = selecionarArquivo(scanner, "saída");
+			if (arquivoSaida != null) {
+				System.out.println("Arquivo de saída selecionado: " + arquivoSaida);
+			}
+		}
+	
+		try {
+			// Código a ser extraído (linhas 8-43)
+			String codigoPropostaConecta = 
 				"@RequiredArgsConstructor\n" +
 				"@Component\n" +
 				"public class PropostaConecta implements PropostaGateway {\n" +
@@ -96,66 +135,130 @@ public class automacao {
 				"\t}\n" +
 				"}";
 
-				// Caminho para a pasta gerados
-				String baseDir = System.getProperty("user.dir");
-				Path geradosPath = Paths.get(baseDir, "src", "main", "java", "com", "example", "demo", "automacao", "projeto1", "gerados");
-				
-				// Criar a pasta gerados se não existir
-				if (!Files.exists(geradosPath)) {
-					Files.createDirectories(geradosPath);
-					System.out.println("Pasta 'gerados' criada: " + geradosPath);
-				}
+			// Caminho para a pasta gerados
+			String baseDir = System.getProperty("user.dir");
+			Path geradosPath = Paths.get(baseDir, "src", "main", "java", "com", "example", "demo", "automacao", "projeto1", "gerados");
+			
+			// Criar a pasta gerados se não existir
+			if (!Files.exists(geradosPath)) {
+				Files.createDirectories(geradosPath);
+				System.out.println("Pasta 'gerados' criada: " + geradosPath);
+			}
 
-				// Criar o arquivo .java
-				File arquivoJava = new File(geradosPath.toFile(), "PropostaConecta.java");
-				
-				// Adicionar package e imports necessários ao código
-				String codigoCompleto = "package com.example.demo.automacao.projeto1.gerados;\n\n" +
-					"import lombok.RequiredArgsConstructor;\n" +
-					"import org.springframework.stereotype.Component;\n" +
-					"import org.slf4j.Logger;\n" +
-					"import org.slf4j.LoggerFactory;\n" +
-					"import java.util.concurrent.atomic.AtomicReference;\n" +
-					"import java.util.Objects;\n\n" +
-					codigoPropostaConecta;
+			// Criar o arquivo .java
+			File arquivoJava = new File(geradosPath.toFile(), "PropostaConecta.java");
+			
+			// Adicionar package e imports necessários ao código
+			String codigoCompleto = "package com.example.demo.automacao.projeto1.gerados;\n\n" +
+				"import lombok.RequiredArgsConstructor;\n" +
+				"import org.springframework.stereotype.Component;\n" +
+				"import org.slf4j.Logger;\n" +
+				"import org.slf4j.LoggerFactory;\n" +
+				"import java.util.concurrent.atomic.AtomicReference;\n" +
+				"import java.util.Objects;\n\n" +
+				codigoPropostaConecta;
 
-				// Escrever o arquivo
-				try (FileWriter writer = new FileWriter(arquivoJava)) {
-					writer.write(codigoCompleto);
-				}
-				
-				System.out.println("Arquivo .java criado: " + arquivoJava.getAbsolutePath());
+			// Escrever o arquivo
+			try (FileWriter writer = new FileWriter(arquivoJava)) {
+				writer.write(codigoCompleto);
+			}
+			
+			System.out.println("Arquivo .java criado: " + arquivoJava.getAbsolutePath());
 
-				// Compilar o arquivo .java para .class
-				JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-				if (compiler == null) {
-					System.err.println("Compilador Java não encontrado. Certifique-se de estar usando JDK, não JRE.");
-					return;
-				}
+			// Compilar o arquivo .java para .class
+			JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+			if (compiler == null) {
+				System.err.println("Compilador Java não encontrado. Certifique-se de estar usando JDK, não JRE.");
+				return;
+			}
 
-				// Configurar o classpath para incluir as dependências do projeto
-				String classpath = System.getProperty("java.class.path");
-				
-				int resultado = compiler.run(null, null, null,
-					"-cp", classpath,
-					"-d", geradosPath.toString(),
-					arquivoJava.getAbsolutePath());
+			// Configurar o classpath para incluir as dependências do projeto
+			String classpath = System.getProperty("java.class.path");
+			
+			int resultado = compiler.run(null, null, null,
+				"-cp", classpath,
+				"-d", geradosPath.toString(),
+				arquivoJava.getAbsolutePath());
 
-				if (resultado == 0) {
-					System.out.println("Arquivo .class gerado com sucesso na pasta: " + geradosPath);
+			if (resultado == 0) {
+				System.out.println("Arquivo .class gerado com sucesso na pasta: " + geradosPath);
+			} else {
+				System.err.println("Erro ao compilar o arquivo. Código de retorno: " + resultado);
+			}
+
+		} catch (IOException e) {
+			System.err.println("Erro ao criar arquivo: " + e.getMessage());
+			e.printStackTrace();
+		} catch (Exception e) {
+			System.err.println("Erro inesperado: " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
+
+	private static String selecionarArquivo(Scanner scanner, String tipo) {
+		System.out.println("\nSelecionar arquivo de " + tipo + ":");
+		System.out.println("1 - Listar arquivos do diretório atual");
+		System.out.println("2 - Digitar caminho completo do arquivo");
+		System.out.print("Escolha uma opção (1 ou 2): ");
+		
+		int opcao = 0;
+		try {
+			String linha = scanner.nextLine().trim();
+			opcao = Integer.parseInt(linha);
+		} catch (NumberFormatException e) {
+			System.err.println("Opção inválida! Digite apenas números.");
+			return null;
+		}
+		
+		if (opcao == 1) {
+			// Listar arquivos do diretório atual
+			String baseDir = System.getProperty("user.dir");
+			File diretorio = new File(baseDir);
+			File[] arquivos = diretorio.listFiles((dir, name) -> name.toLowerCase().endsWith(".java") || name.toLowerCase().endsWith(".xml") || name.toLowerCase().endsWith(".json"));
+			
+			if (arquivos == null || arquivos.length == 0) {
+				System.out.println("Nenhum arquivo encontrado no diretório atual.");
+				System.out.print("Digite o caminho completo do arquivo: ");
+				return scanner.nextLine().trim();
+			}
+			
+			System.out.println("\nArquivos disponíveis:");
+			for (int i = 0; i < arquivos.length; i++) {
+				System.out.println((i + 1) + " - " + arquivos[i].getName());
+			}
+			System.out.print("Digite o número do arquivo desejado: ");
+			
+			try {
+				String linha = scanner.nextLine().trim();
+				int escolha = Integer.parseInt(linha);
+				if (escolha >= 1 && escolha <= arquivos.length) {
+					return arquivos[escolha - 1].getAbsolutePath();
 				} else {
-					System.err.println("Erro ao compilar o arquivo. Código de retorno: " + resultado);
+					System.err.println("Opção inválida!");
+					return null;
 				}
-
-			} catch (IOException e) {
-				System.err.println("Erro ao criar arquivo: " + e.getMessage());
-				e.printStackTrace();
+			} catch (NumberFormatException e) {
+				System.err.println("Erro ao selecionar arquivo: Digite apenas números.");
+				return null;
 			} catch (Exception e) {
-				System.err.println("Erro inesperado: " + e.getMessage());
-				e.printStackTrace();
+				System.err.println("Erro ao selecionar arquivo: " + e.getMessage());
+				return null;
+			}
+		} else if (opcao == 2) {
+			// Pedir caminho completo
+			System.out.print("Digite o caminho completo do arquivo: ");
+			String caminho = scanner.nextLine().trim();
+			
+			File arquivo = new File(caminho);
+			if (arquivo.exists() && arquivo.isFile()) {
+				return caminho;
+			} else {
+				System.err.println("Arquivo não encontrado: " + caminho);
+				return null;
 			}
 		} else {
-			System.out.println("Geração para o tipo '" + tipoGeracao + "' ainda não implementada.");
+			System.err.println("Opção inválida!");
+			return null;
 		}
 	}
 
