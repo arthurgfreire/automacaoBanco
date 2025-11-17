@@ -57,9 +57,15 @@ public class automacao {
 	}
 
 	private static void conecta(Scanner scanner) {
+		// Perguntar o nome do fluxo
+		System.out.println("\n=== CONFIGURAÇÃO DO FLUXO ===");
+		System.out.print("Qual o nome do fluxo? ");
+		String nomeFluxo = scanner.nextLine().trim();
+		System.out.println("Nome do fluxo: " + nomeFluxo);
+		
 		// Perguntar sobre fluxo de entrada (obrigatório)
 		System.out.println("\n=== FLUXO DE ENTRADA ===");
-		System.out.print("Existe fluxo de entrada? (s/n): ");
+		System.out.print("Existe Book de entrada? (s/n): ");
 		String respostaEntrada = scanner.nextLine().trim().toLowerCase();
 		
 		String arquivoEntrada = null;
@@ -77,7 +83,7 @@ public class automacao {
 		
 		// Perguntar sobre fluxo de saída (opcional)
 		System.out.println("\n=== FLUXO DE SAÍDA ===");
-		System.out.print("Existe fluxo de saída? (s/n): ");
+		System.out.print("Existe Book de saída? (s/n): ");
 		String respostaSaida = scanner.nextLine().trim().toLowerCase();
 		
 		String arquivoSaida = null;
