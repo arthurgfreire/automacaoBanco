@@ -56,6 +56,84 @@ public class automacao {
 		}
 	}
 
+	/**
+	 * Aplica o padrão de case do nome original ao novo nome.
+	 * @param opcoes 1 - Tudo maiúsculo, 2 - Tudo minúsculo, 3 - Primeira letra maiúscula, resto minúsculo
+	 * @param novoNome Nome original
+	 * @param sufixo Sufixo a ser adicionado
+	 * @return Nome formatado
+	 */
+	private static String aplicarCasePattern(Integer opcoes, String novoNome, String sufixo) {
+		if (opcoes == null || novoNome == null) {
+			return novoNome + capitalizarSufixo(sufixo);
+		}
+		
+		// Garantir que o sufixo sempre começa com maiúscula
+		String sufixoFormatado = capitalizarSufixo(sufixo);
+		
+		String resultado;
+		switch (opcoes) {
+			case 1:
+			// Tudo maiúsculo
+				resultado = novoNome.toUpperCase() + sufixoFormatado;
+				break;
+			case 2:
+			// Tudo minúsculo
+				resultado = novoNome.toLowerCase() + sufixoFormatado;
+				break;
+			case 3:
+			// Primeira letra maiúscula, resto minúsculo
+				resultado = novoNome.substring(0, 1).toUpperCase() + (novoNome.length() > 1 ? novoNome.substring(1).toLowerCase() : "") + sufixoFormatado;
+				break;
+			default:
+			// CamelCase complexo: manter como está, apenas adicionar sufixo
+				resultado = novoNome + sufixoFormatado;
+				break;
+		}
+		return resultado;
+	}
+	
+	/**
+	 * Capitaliza a primeira letra do sufixo, se não estiver vazio.
+	 */
+	private static String capitalizarSufixo(String sufixo) {
+		if (sufixo == null || sufixo.isEmpty()) {
+			return sufixo;
+		}
+		return sufixo.substring(0, 1).toUpperCase() + (sufixo.length() > 1 ? sufixo.substring(1) : "");
+	}
+	
+	/**
+	 * Capitaliza a primeira letra de uma string.
+	 */
+	private static String capitalizar(String str) {
+		if (str == null || str.isEmpty()) {
+			return str;
+		}
+		return str.substring(0, 1).toUpperCase() + (str.length() > 1 ? str.substring(1) : "");
+	}
+	
+	/**
+	 * Extrai o nome do arquivo (sem extensão) do caminho completo.
+	 * Exemplo: "C:/pasta/meuArquivo.java" -> "meuArquivo"
+	 */
+	private static String extrairNomeArquivoSemExtensao(String caminhoCompleto) {
+		if (caminhoCompleto == null || caminhoCompleto.isEmpty()) {
+			return null;
+		}
+		
+		File arquivo = new File(caminhoCompleto);
+		String nomeArquivo = arquivo.getName();
+		
+		// Remover extensão
+		int ultimoPonto = nomeArquivo.lastIndexOf('.');
+		if (ultimoPonto > 0) {
+			return nomeArquivo.substring(0, ultimoPonto);
+		}
+		
+		return nomeArquivo;
+	}
+
 	private static void conecta(Scanner scanner) {
 		// Perguntar o nome do fluxo
 		System.out.println("\n=== CONFIGURAÇÃO DO FLUXO ===");
@@ -76,6 +154,7 @@ public class automacao {
 		String respostaEntrada = scanner.nextLine().trim().toLowerCase();
 		
 		String arquivoEntrada = null;
+		String nomeBookEntrada = null;
 		if (respostaEntrada.equals("s") || respostaEntrada.equals("sim")) {
 			arquivoEntrada = selecionarArquivo(scanner, "entrada");
 			if (arquivoEntrada == null) {
@@ -83,6 +162,13 @@ public class automacao {
 				return;
 			}
 			System.out.println("Arquivo de entrada selecionado: " + arquivoEntrada);
+			// Extrair nome do book automaticamente do nome do arquivo
+			nomeBookEntrada = extrairNomeArquivoSemExtensao(arquivoEntrada);
+			if (nomeBookEntrada == null || nomeBookEntrada.isEmpty()) {
+				System.err.println("Não foi possível extrair o nome do Book de entrada do arquivo. Encerrando...");
+				return;
+			}
+			System.out.println("Nome do Book de entrada identificado: " + nomeBookEntrada);
 		} else {
 			System.err.println("Fluxo de entrada é obrigatório. Encerrando...");
 			return;
@@ -94,14 +180,26 @@ public class automacao {
 		String respostaSaida = scanner.nextLine().trim().toLowerCase();
 		
 		String arquivoSaida = null;
+		String nomeBookSaida = null;
 		if (respostaSaida.equals("s") || respostaSaida.equals("sim")) {
 			arquivoSaida = selecionarArquivo(scanner, "saída");
 			if (arquivoSaida != null) {
 				System.out.println("Arquivo de saída selecionado: " + arquivoSaida);
+				// Extrair nome do book automaticamente do nome do arquivo
+				nomeBookSaida = extrairNomeArquivoSemExtensao(arquivoSaida);
+				if (nomeBookSaida != null && !nomeBookSaida.isEmpty()) {
+					System.out.println("Nome do Book de saída identificado: " + nomeBookSaida);
+				}
 			}
 		}
 	
 		try {
+			// Preparar nomes dos books com Request/Response mantendo o padrão de case
+			String nomeBookEntradaRequest = nomeBookEntrada != null ? aplicarCasePattern(1, nomeBookEntrada, "Request") : "SEMBOOKDEENTRADARequest";
+			String nomeBookEntradaRequestVar = nomeBookEntrada != null ? aplicarCasePattern(2, nomeBookEntrada, "Request") : "sembookdeentradaRequest";
+			String nomeBookSaidaResponse = nomeBookSaida != null ? aplicarCasePattern(1, nomeBookSaida, "Response") : "SEMBOOKDESAIDAResponse";
+			String nomeBookSaidaResponseParam = nomeBookSaida != null ? aplicarCasePattern(2, nomeBookSaida, "") : "sembookdesaidaparam";
+			
 			// Código a ser extraído (linhas 8-43)
 			String codigoPropostaConecta = 
 				"@RequiredArgsConstructor\n" +
@@ -119,15 +217,15 @@ public class automacao {
 				"\tpublic Proposta salvarr(Proposta proposta) {\n" +
 				"\t\tLOGGER_TECNICO.info(\"Iniciando metodo Salvar Proposta {}\", proposta);\n" +
 				"\t\t" + nomeFluxoFormatado + "Request req = new " + nomeFluxoFormatado + "Request();\n" +
-				"\t\tPCCJWM2ERequest pccjwm2eRequest = PropostaConectaMapper.INSTANCE.toPcjwm2eRequest(proposta);\n" +
-				"\t\treq.setPccjwm2eRequest(pccjwm2eRequest);\n" +
+				"\t\t" + nomeBookEntradaRequest + " " + nomeBookEntradaRequestVar + " = PropostaConectaMapper.INSTANCE.toPcjwm2eRequest(proposta);\n" +
+				"\t\treq.set" + capitalizar(nomeBookEntradaRequestVar) + "(" + nomeBookEntradaRequestVar + ");\n" +
 				"\t\t\n" +
 				"\t\t" + nomeFluxoFormatado + "Response res = new " + nomeFluxoFormatado + "Response();\n" +
-				"\t\tAtomicReference<PCCJWM2SResponse> memory = new AtomicReference<>();\n" +
+				"\t\tAtomicReference<" + nomeBookSaidaResponse + "> memory = new AtomicReference<>();\n" +
 				"\t\t\n" +
 				"\t\tLOGGER_TECNICO.info(\"Executando fluxo {} PADRAO\", FLUXO_ABRIR_PROPOSTA.toUpperCase());\n" +
 				"\t\tconectaClient.fluxo().executar(req, res,\n" +
-				"\t\t\t\tnew PccjiadlStatusHandler (pccjwm2s -> memory.set(pertencePccjwm2s(pccjwm2s))));\n" +
+				"\t\t\t\tnew PccjiadlStatusHandler (" + nomeBookSaidaResponseParam + " -> memory.set(pertence" + capitalizar(nomeBookSaidaResponseParam) + "(" + nomeBookSaidaResponseParam + "))));\n" +
 				"\t\t\t\t\n" +
 				"\t\tif(Objects.nonNull(memory.get())){\n" +
 				"\t\t\tproposta.setNumeroProposta(Long.parseLong(memory.get().getCppstaCataoPJ()));\n" +
@@ -139,7 +237,7 @@ public class automacao {
 				"\t\treturn proposta;\n" +
 				"\t}\n" +
 				"\n" +
-				"\tprivate PCCJWM2SResponse pertencePccjwm2s(final PCCJWM2SResponse response) {\n" +
+				"\tprivate " + nomeBookSaidaResponse + " pertence" + capitalizar(nomeBookSaidaResponseParam) + "(final " + nomeBookSaidaResponse + " response) {\n" +
 				"\t\tif (Objects.nonNull(response)\n" +
 				"\t\t\t\t&& Objects.nonNull(response.getCppstaCataoPj())){\n" +
 				"\t\t\treturn response;\n" +
