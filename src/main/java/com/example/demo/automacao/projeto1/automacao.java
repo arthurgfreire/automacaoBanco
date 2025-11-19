@@ -133,8 +133,37 @@ public class automacao {
 		
 		return nomeArquivo;
 	}
+	
+	/**
+	 * Pede o caminho completo do arquivo ao usuário (sem opções de listar).
+	 */
+	private static String pedirCaminhoArquivo(Scanner scanner, String tipo) {
+		System.out.print("Digite o caminho completo do arquivo do Book de " + tipo + ": ");
+		String caminho = scanner.nextLine().trim();
+		
+		if (caminho == null || caminho.isEmpty()) {
+			return null;
+		}
+		
+		File arquivo = new File(caminho);
+		if (arquivo.exists() && arquivo.isFile()) {
+			return caminho;
+		} else {
+			System.err.println("Arquivo não encontrado: " + caminho);
+			return null;
+		}
+	}
 
 	private static void conecta(Scanner scanner) {
+		// Perguntar o nome da classe para criar o arquivo Hexagonal
+		System.out.println("\n=== CONFIGURAÇÃO DA CLASSE ===");
+		System.out.print("Nome da classe para criar o arquivo Hexagonal: ");
+		String nomeClasseHexagonal = scanner.nextLine().trim();
+		if (nomeClasseHexagonal == null || nomeClasseHexagonal.isEmpty()) {
+			System.err.println("Nome da classe é obrigatório. Encerrando...");
+			return;
+		}
+		
 		// Perguntar o nome do fluxo
 		System.out.println("\n=== CONFIGURAÇÃO DO FLUXO ===");
 		System.out.print("Qual o nome do fluxo? ");
@@ -148,31 +177,21 @@ public class automacao {
 		}
 		System.out.println("Nome do fluxo: " + nomeFluxoFormatado);
 		
-		// Perguntar sobre fluxo de entrada (obrigatório)
+		// Pedir arquivo de entrada (obrigatório) - direto sem perguntar se existe
 		System.out.println("\n=== FLUXO DE ENTRADA ===");
-		System.out.print("Existe Book de entrada? (s/n): ");
-		String respostaEntrada = scanner.nextLine().trim().toLowerCase();
-		
-		String arquivoEntrada = null;
-		String nomeBookEntrada = null;
-		if (respostaEntrada.equals("s") || respostaEntrada.equals("sim")) {
-			arquivoEntrada = selecionarArquivo(scanner, "entrada");
-			if (arquivoEntrada == null) {
-				System.err.println("Fluxo de entrada é obrigatório. Encerrando...");
-				return;
-			}
-			System.out.println("Arquivo de entrada selecionado: " + arquivoEntrada);
-			// Extrair nome do book automaticamente do nome do arquivo
-			nomeBookEntrada = extrairNomeArquivoSemExtensao(arquivoEntrada);
-			if (nomeBookEntrada == null || nomeBookEntrada.isEmpty()) {
-				System.err.println("Não foi possível extrair o nome do Book de entrada do arquivo. Encerrando...");
-				return;
-			}
-			System.out.println("Nome do Book de entrada identificado: " + nomeBookEntrada);
-		} else {
+		String arquivoEntrada = pedirCaminhoArquivo(scanner, "entrada");
+		if (arquivoEntrada == null) {
 			System.err.println("Fluxo de entrada é obrigatório. Encerrando...");
 			return;
 		}
+		System.out.println("Arquivo de entrada selecionado: " + arquivoEntrada);
+		// Extrair nome do book automaticamente do nome do arquivo
+		String nomeBookEntrada = extrairNomeArquivoSemExtensao(arquivoEntrada);
+		if (nomeBookEntrada == null || nomeBookEntrada.isEmpty()) {
+			System.err.println("Não foi possível extrair o nome do Book de entrada do arquivo. Encerrando...");
+			return;
+		}
+		System.out.println("Nome do Book de entrada identificado: " + nomeBookEntrada);
 		
 		// Perguntar sobre fluxo de saída (opcional)
 		System.out.println("\n=== FLUXO DE SAÍDA ===");
@@ -182,7 +201,7 @@ public class automacao {
 		String arquivoSaida = null;
 		String nomeBookSaida = null;
 		if (respostaSaida.equals("s") || respostaSaida.equals("sim")) {
-			arquivoSaida = selecionarArquivo(scanner, "saída");
+			arquivoSaida = pedirCaminhoArquivo(scanner, "saída");
 			if (arquivoSaida != null) {
 				System.out.println("Arquivo de saída selecionado: " + arquivoSaida);
 				// Extrair nome do book automaticamente do nome do arquivo
@@ -194,6 +213,13 @@ public class automacao {
 		}
 	
 		try {
+			// Normalizar o nome da classe (primeira letra maiúscula, resto mantém o padrão do usuário)
+			String nomeClasseFormatado = "";
+			if (nomeClasseHexagonal != null && !nomeClasseHexagonal.isEmpty()) {
+				nomeClasseFormatado = nomeClasseHexagonal.substring(0, 1).toUpperCase() + 
+					(nomeClasseHexagonal.length() > 1 ? nomeClasseHexagonal.substring(1) : "");
+			}
+			
 			// Preparar nomes dos books com Request/Response mantendo o padrão de case
 			String nomeBookEntradaRequest = nomeBookEntrada != null ? aplicarCasePattern(1, nomeBookEntrada, "Request") : "SEMBOOKDEENTRADARequest";
 			String nomeBookEntradaRequestVar = nomeBookEntrada != null ? aplicarCasePattern(2, nomeBookEntrada, "Request") : "sembookdeentradaRequest";
@@ -204,8 +230,8 @@ public class automacao {
 			String codigoPropostaConecta = 
 				"@RequiredArgsConstructor\n" +
 				"@Component\n" +
-				"public class PropostaConecta implements PropostaGateway {\n" +
-				"\tprivate static final Logger LOGGER_TECNICO = LoggerFactory.getLogger(PropostaConecta.class);\n" +
+				"public class " + nomeClasseFormatado + "Conecta implements PropostaGateway {\n" +
+				"\tprivate static final Logger LOGGER_TECNICO = LoggerFactory.getLogger(" + nomeClasseFormatado + "Conecta.class);\n" +
 				"\tpublic static final String FLUXO_LISTA_PROPOSTA = \"PCCJIADP\";\n" +
 				"\tpublic static final String ELUXO_ABRIR_PROPOSTA = \"PCCJIADL\";\n" +
 				"\tpublic static final String FLUXO_ATUALIZA_SITUACAO_EVENTO = \"PCCJIADM\";\n" +
@@ -257,7 +283,7 @@ public class automacao {
 			}
 
 			// Criar o arquivo .java
-			File arquivoJava = new File(geradosPath.toFile(), "PropostaConecta.java");
+			File arquivoJava = new File(geradosPath.toFile(), nomeClasseFormatado + "Conecta.java");
 			
 			// Adicionar package e imports necessários ao código
 			String codigoCompleto = "package com.example.demo.automacao.projeto1.gerados;\n\n" +
