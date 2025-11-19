@@ -61,7 +61,14 @@ public class automacao {
 		System.out.println("\n=== CONFIGURAÇÃO DO FLUXO ===");
 		System.out.print("Qual o nome do fluxo? ");
 		String nomeFluxo = scanner.nextLine().trim();
-		System.out.println("Nome do fluxo: " + nomeFluxo);
+		
+		// Normalizar o nome do fluxo (primeira letra maiúscula, resto minúscula)
+		String nomeFluxoFormatado = "";
+		if (nomeFluxo != null && !nomeFluxo.isEmpty()) {
+			nomeFluxoFormatado = nomeFluxo.substring(0, 1).toUpperCase() + 
+				(nomeFluxo.length() > 1 ? nomeFluxo.substring(1).toLowerCase() : "");
+		}
+		System.out.println("Nome do fluxo: " + nomeFluxoFormatado);
 		
 		// Perguntar sobre fluxo de entrada (obrigatório)
 		System.out.println("\n=== FLUXO DE ENTRADA ===");
@@ -111,11 +118,11 @@ public class automacao {
 				"\t@Override\n" +
 				"\tpublic Proposta salvarr(Proposta proposta) {\n" +
 				"\t\tLOGGER_TECNICO.info(\"Iniciando metodo Salvar Proposta {}\", proposta);\n" +
-				"\t\tPccjiadlRequest req = new PccjiadlRequest();\n" +
+				"\t\t" + nomeFluxoFormatado + "Request req = new " + nomeFluxoFormatado + "Request();\n" +
 				"\t\tPCCJWM2ERequest pccjwm2eRequest = PropostaConectaMapper.INSTANCE.toPcjwm2eRequest(proposta);\n" +
 				"\t\treq.setPccjwm2eRequest(pccjwm2eRequest);\n" +
 				"\t\t\n" +
-				"\t\tPccjiadlResponse res = new PccjiadlResponse();\n" +
+				"\t\t" + nomeFluxoFormatado + "Response res = new " + nomeFluxoFormatado + "Response();\n" +
 				"\t\tAtomicReference<PCCJWM2SResponse> memory = new AtomicReference<>();\n" +
 				"\t\t\n" +
 				"\t\tLOGGER_TECNICO.info(\"Executando fluxo {} PADRAO\", FLUXO_ABRIR_PROPOSTA.toUpperCase());\n" +
