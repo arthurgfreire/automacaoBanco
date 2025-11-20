@@ -164,6 +164,34 @@ public class automacao {
 			return;
 		}
 		
+		// Perguntar o nome do método
+		System.out.print("Qual o nome do metodo para ser criado? ");
+		String nomeMetodo = scanner.nextLine().trim();
+		if (nomeMetodo == null || nomeMetodo.isEmpty()) {
+			System.err.println("Nome do método é obrigatório. Encerrando...");
+			return;
+		}
+		
+		// Perguntar o tipo de retorno
+		System.out.println("\nTipo de retorno:");
+		System.out.println("1 - Retorna objeto simples");
+		System.out.println("2 - Retorna uma lista");
+		System.out.println("3 - Sem retorno (Void)");
+		System.out.print("Digite o número da opção: ");
+		String respostaRetorno = scanner.nextLine().trim();
+		
+		int tipoRetorno = 0;
+		try {
+			tipoRetorno = Integer.parseInt(respostaRetorno);
+			if (tipoRetorno < 1 || tipoRetorno > 3) {
+				System.err.println("Opção inválida! Deve ser 1, 2 ou 3. Encerrando...");
+				return;
+			}
+		} catch (NumberFormatException e) {
+			System.err.println("Opção inválida! Digite apenas números (1, 2 ou 3). Encerrando...");
+			return;
+		}
+		
 		// Perguntar o nome do fluxo
 		System.out.println("\n=== CONFIGURAÇÃO DO FLUXO ===");
 		System.out.print("Qual o nome do fluxo? ");
@@ -225,6 +253,36 @@ public class automacao {
 			String nomeBookEntradaRequestVar = nomeBookEntrada != null ? aplicarCasePattern(2, nomeBookEntrada, "Request") : "sembookdeentradaRequest";
 			String nomeBookSaidaResponse = nomeBookSaida != null ? aplicarCasePattern(1, nomeBookSaida, "Response") : "SEMBOOKDESAIDAResponse";
 			String nomeBookSaidaResponseParam = nomeBookSaida != null ? aplicarCasePattern(2, nomeBookSaida, "") : "sembookdesaidaparam";
+			// Preparar nome do book de saída com "Resposta" para o tipo de retorno
+			String nomeBookSaidaResposta = nomeBookSaida != null ? aplicarCasePattern(1, nomeBookSaida, "Resposta") : "SEMBOOKDESAIDAResposta";
+			
+			// Definir tipo de retorno baseado na opção escolhida
+			String tipoRetornoString = "";
+			String retornoFinal = "";
+			String nomeVariavelRetorno = "";
+			boolean retornoEhVoid = (tipoRetorno == 3);
+			switch (tipoRetorno) {
+				case 1:
+					tipoRetornoString = nomeBookSaidaResposta;
+					nomeVariavelRetorno = aplicarCasePattern(2, nomeBookSaida != null ? nomeBookSaida : "sembookdesaida", "");
+					retornoFinal = "\t\treturn " + nomeVariavelRetorno + ";\n";
+					break;
+				case 2:
+					tipoRetornoString = "List<" + nomeBookSaidaResposta + ">";
+					nomeVariavelRetorno = aplicarCasePattern(2, nomeBookSaida != null ? nomeBookSaida : "sembookdesaida", "");
+					retornoFinal = "\t\t// TODO: Retornar lista de " + nomeBookSaidaResposta.toLowerCase() + "\n\t\treturn Collections.emptyList();\n";
+					break;
+				case 3:
+					tipoRetornoString = "void";
+					nomeVariavelRetorno = ""; // Não é necessário para void
+					retornoFinal = "";
+					break;
+				default:
+					tipoRetornoString = nomeBookSaidaResposta;
+					nomeVariavelRetorno = aplicarCasePattern(2, nomeBookSaida != null ? nomeBookSaida : "sembookdesaida", "");
+					retornoFinal = "\t\treturn " + nomeVariavelRetorno + ";\n";
+					break;
+			}
 			
 			// Código a ser extraído (linhas 8-43)
 			String codigoPropostaConecta = 
@@ -240,8 +298,8 @@ public class automacao {
 				"\tprivate final ConectaCLient conectaClient;\n" +
 				"\n" +
 				"\t@Override\n" +
-				"\tpublic Proposta salvarr(Proposta proposta) {\n" +
-				"\t\tLOGGER_TECNICO.info(\"Iniciando metodo Salvar Proposta {}\", proposta);\n" +
+				"\tpublic " + tipoRetornoString + " " + nomeMetodo + "(Proposta proposta) {\n" +
+				"\t\tLOGGER_TECNICO.info(\"Iniciando metodo " + nomeMetodo + " {}\", proposta);\n" +
 				"\t\t" + nomeFluxoFormatado + "Request req = new " + nomeFluxoFormatado + "Request();\n" +
 				"\t\t" + nomeBookEntradaRequest + " " + nomeBookEntradaRequestVar + " = PropostaConectaMapper.INSTANCE.toPcjwm2eRequest(proposta);\n" +
 				"\t\treq.set" + capitalizar(nomeBookEntradaRequestVar) + "(" + nomeBookEntradaRequestVar + ");\n" +
@@ -253,14 +311,15 @@ public class automacao {
 				"\t\tconectaClient.fluxo().executar(req, res,\n" +
 				"\t\t\t\tnew PccjiadlStatusHandler (" + nomeBookSaidaResponseParam + " -> memory.set(pertence" + capitalizar(nomeBookSaidaResponseParam) + "(" + nomeBookSaidaResponseParam + "))));\n" +
 				"\t\t\t\t\n" +
+				"\t\t" + (!retornoEhVoid ? nomeBookSaidaResposta + " " + nomeVariavelRetorno + " = null;\n" : "") +
 				"\t\tif(Objects.nonNull(memory.get())){\n" +
-				"\t\t\tproposta.setNumeroProposta(Long.parseLong(memory.get().getCppstaCataoPJ()));\n" +
+				(!retornoEhVoid ? "\t\t\t" + nomeVariavelRetorno + " = (" + nomeBookSaidaResposta + ") memory.get();\n" : "\t\t\tproposta.setNumeroProposta(Long.parseLong(memory.get().getCppstaCataoPJ()));\n") +
 				"\t\t}\n" +
 				"\t\t\n" +
 				"\t\tLOGGER_TECNICO.info(\"Proposta Salva - CPF:\" + proposta.getCpf().getCPF()\n" +
 				"\t\t\t\t+ \" CNPJ: \" + proposta.getCnpj().getCNPJ()\n" +
 				"\t\t\t\t+ \" Proposta: \" + proposta.getNumeroProposta());\n" +
-				"\t\treturn proposta;\n" +
+				retornoFinal +
 				"\t}\n" +
 				"\n" +
 				"\tprivate " + nomeBookSaidaResponse + " pertence" + capitalizar(nomeBookSaidaResponseParam) + "(final " + nomeBookSaidaResponse + " response) {\n" +
@@ -286,14 +345,22 @@ public class automacao {
 			File arquivoJava = new File(geradosPath.toFile(), nomeClasseFormatado + "Conecta.java");
 			
 			// Adicionar package e imports necessários ao código
-			String codigoCompleto = "package com.example.demo.automacao.projeto1.gerados;\n\n" +
+			String imports = "package com.example.demo.automacao.projeto1.gerados;\n\n" +
 				"import lombok.RequiredArgsConstructor;\n" +
 				"import org.springframework.stereotype.Component;\n" +
 				"import org.slf4j.Logger;\n" +
 				"import org.slf4j.LoggerFactory;\n" +
 				"import java.util.concurrent.atomic.AtomicReference;\n" +
-				"import java.util.Objects;\n\n" +
-				codigoPropostaConecta;
+				"import java.util.Objects;\n";
+			
+			// Adicionar imports de List e Collections se o retorno for lista
+			if (tipoRetorno == 2) {
+				imports += "import java.util.List;\n" +
+					"import java.util.Collections;\n";
+			}
+			
+			imports += "\n";
+			String codigoCompleto = imports + codigoPropostaConecta;
 
 			// Escrever o arquivo
 			try (FileWriter writer = new FileWriter(arquivoJava)) {
