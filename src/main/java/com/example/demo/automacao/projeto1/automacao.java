@@ -8,9 +8,31 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 public class automacao {
+	
+	/**
+	 * Classe interna para armazenar os dados de cada método.
+	 */
+	private static class DadosMetodo {
+		String nomeMetodo;
+		int tipoRetorno;
+		String nomeFluxoFormatado;
+		String nomeBookEntrada;
+		String nomeBookSaida;
+		
+		DadosMetodo(String nomeMetodo, int tipoRetorno, String nomeFluxoFormatado,
+				String nomeBookEntrada, String nomeBookSaida) {
+			this.nomeMetodo = nomeMetodo;
+			this.tipoRetorno = tipoRetorno;
+			this.nomeFluxoFormatado = nomeFluxoFormatado;
+			this.nomeBookEntrada = nomeBookEntrada;
+			this.nomeBookSaida = nomeBookSaida;
+		}
+	}
 
 	public static void main(String[] args) {
 		Scanner scanner = new Scanner(System.in);
@@ -164,80 +186,101 @@ public class automacao {
 			return;
 		}
 		
-		// Perguntar o nome do método
-		System.out.print("Qual o nome do metodo para ser criado? ");
-		String nomeMetodo = scanner.nextLine().trim();
-		if (nomeMetodo == null || nomeMetodo.isEmpty()) {
-			System.err.println("Nome do método é obrigatório. Encerrando...");
-			return;
-		}
+		// Lista para armazenar os métodos
+		List<DadosMetodo> listaMetodos = new ArrayList<>();
 		
-		// Perguntar o tipo de retorno
-		System.out.println("\nTipo de retorno:");
-		System.out.println("1 - Retorna objeto simples");
-		System.out.println("2 - Retorna uma lista");
-		System.out.println("3 - Sem retorno (Void)");
-		System.out.print("Digite o número da opção: ");
-		String respostaRetorno = scanner.nextLine().trim();
-		
-		int tipoRetorno = 0;
-		try {
-			tipoRetorno = Integer.parseInt(respostaRetorno);
-			if (tipoRetorno < 1 || tipoRetorno > 3) {
-				System.err.println("Opção inválida! Deve ser 1, 2 ou 3. Encerrando...");
-				return;
+		// Loop para criar múltiplos métodos
+		while (true) {
+			System.out.println("\n=== CONFIGURAÇÃO DO MÉTODO ===");
+			System.out.println("Digite '0' para finalizar e gerar a classe");
+			System.out.print("Qual o nome do metodo para ser criado? ");
+			String nomeMetodo = scanner.nextLine().trim();
+			
+			// Verificar se deseja finalizar
+			if (nomeMetodo.equals("0")) {
+				if (listaMetodos.isEmpty()) {
+					System.err.println("Nenhum método foi criado. Encerrando...");
+					return;
+				}
+				break; // Finaliza o loop e gera a classe
 			}
-		} catch (NumberFormatException e) {
-			System.err.println("Opção inválida! Digite apenas números (1, 2 ou 3). Encerrando...");
-			return;
-		}
-		
-		// Perguntar o nome do fluxo
-		System.out.println("\n=== CONFIGURAÇÃO DO FLUXO ===");
-		System.out.print("Qual o nome do fluxo? ");
-		String nomeFluxo = scanner.nextLine().trim();
-		
-		// Normalizar o nome do fluxo (primeira letra maiúscula, resto minúscula)
-		String nomeFluxoFormatado = "";
-		if (nomeFluxo != null && !nomeFluxo.isEmpty()) {
-			nomeFluxoFormatado = nomeFluxo.substring(0, 1).toUpperCase() + 
-				(nomeFluxo.length() > 1 ? nomeFluxo.substring(1).toLowerCase() : "");
-		}
-		System.out.println("Nome do fluxo: " + nomeFluxoFormatado);
-		
-		// Pedir arquivo de entrada (obrigatório) - direto sem perguntar se existe
-		System.out.println("\n=== FLUXO DE ENTRADA ===");
-		String arquivoEntrada = pedirCaminhoArquivo(scanner, "entrada");
-		if (arquivoEntrada == null) {
-			System.err.println("Fluxo de entrada é obrigatório. Encerrando...");
-			return;
-		}
-		System.out.println("Arquivo de entrada selecionado: " + arquivoEntrada);
-		// Extrair nome do book automaticamente do nome do arquivo
-		String nomeBookEntrada = extrairNomeArquivoSemExtensao(arquivoEntrada);
-		if (nomeBookEntrada == null || nomeBookEntrada.isEmpty()) {
-			System.err.println("Não foi possível extrair o nome do Book de entrada do arquivo. Encerrando...");
-			return;
-		}
-		System.out.println("Nome do Book de entrada identificado: " + nomeBookEntrada);
-		
-		// Perguntar sobre fluxo de saída (opcional)
-		System.out.println("\n=== FLUXO DE SAÍDA ===");
-		System.out.print("Existe Book de saída? (s/n): ");
-		String respostaSaida = scanner.nextLine().trim().toLowerCase();
-		
-		String arquivoSaida = null;
-		String nomeBookSaida = null;
-		if (respostaSaida.equals("s") || respostaSaida.equals("sim")) {
-			arquivoSaida = pedirCaminhoArquivo(scanner, "saída");
-			if (arquivoSaida != null) {
-				System.out.println("Arquivo de saída selecionado: " + arquivoSaida);
-				// Extrair nome do book automaticamente do nome do arquivo
-				nomeBookSaida = extrairNomeArquivoSemExtensao(arquivoSaida);
-				if (nomeBookSaida != null && !nomeBookSaida.isEmpty()) {
-					System.out.println("Nome do Book de saída identificado: " + nomeBookSaida);
+			
+			if (nomeMetodo == null || nomeMetodo.isEmpty()) {
+				System.err.println("Nome do método é obrigatório. Tente novamente.");
+				continue;
+			}
+			
+			// Perguntar o tipo de retorno
+			System.out.println("\nTipo de retorno:");
+			System.out.println("1 - Retorna objeto simples");
+			System.out.println("2 - Retorna uma lista");
+			System.out.println("3 - Sem retorno (Void)");
+			System.out.print("Digite o número da opção: ");
+			String respostaRetorno = scanner.nextLine().trim();
+			
+			int tipoRetorno = 0;
+			try {
+				tipoRetorno = Integer.parseInt(respostaRetorno);
+				if (tipoRetorno < 1 || tipoRetorno > 3) {
+					System.err.println("Opção inválida! Deve ser 1, 2 ou 3. Tente novamente.");
+					continue;
+				}
+			} catch (NumberFormatException e) {
+				System.err.println("Opção inválida! Digite apenas números (1, 2 ou 3). Tente novamente.");
+				continue;
+			}
+			
+			// Perguntar o nome do fluxo
+			System.out.println("\n=== CONFIGURAÇÃO DO FLUXO ===");
+			System.out.print("Qual o nome do fluxo? ");
+			String nomeFluxo = scanner.nextLine().trim();
+			
+			// Normalizar o nome do fluxo (primeira letra maiúscula, resto minúscula)
+			String nomeFluxoFormatado = "";
+			if (nomeFluxo != null && !nomeFluxo.isEmpty()) {
+				nomeFluxoFormatado = nomeFluxo.substring(0, 1).toUpperCase() + 
+					(nomeFluxo.length() > 1 ? nomeFluxo.substring(1).toLowerCase() : "");
+			}
+			System.out.println("Nome do fluxo: " + nomeFluxoFormatado);
+			
+			// Pedir arquivo de entrada (obrigatório) - direto sem perguntar se existe
+			System.out.println("\n=== FLUXO DE ENTRADA ===");
+			String arquivoEntrada = pedirCaminhoArquivo(scanner, "entrada");
+			if (arquivoEntrada == null) {
+				System.err.println("Fluxo de entrada é obrigatório. Tente novamente.");
+				continue;
+			}
+			System.out.println("Arquivo de entrada selecionado: " + arquivoEntrada);
+			// Extrair nome do book automaticamente do nome do arquivo
+			String nomeBookEntrada = extrairNomeArquivoSemExtensao(arquivoEntrada);
+			if (nomeBookEntrada == null || nomeBookEntrada.isEmpty()) {
+				System.err.println("Não foi possível extrair o nome do Book de entrada do arquivo. Tente novamente.");
+				continue;
+			}
+			System.out.println("Nome do Book de entrada identificado: " + nomeBookEntrada);
+			
+			// Perguntar sobre fluxo de saída (opcional)
+			System.out.println("\n=== FLUXO DE SAÍDA ===");
+			System.out.print("Existe Book de saída? (s/n): ");
+			String respostaSaida = scanner.nextLine().trim().toLowerCase();
+			
+			String arquivoSaida = null;
+			String nomeBookSaida = null;
+			if (respostaSaida.equals("s") || respostaSaida.equals("sim")) {
+				arquivoSaida = pedirCaminhoArquivo(scanner, "saída");
+				if (arquivoSaida != null) {
+					System.out.println("Arquivo de saída selecionado: " + arquivoSaida);
+					// Extrair nome do book automaticamente do nome do arquivo
+					nomeBookSaida = extrairNomeArquivoSemExtensao(arquivoSaida);
+					if (nomeBookSaida != null && !nomeBookSaida.isEmpty()) {
+						System.out.println("Nome do Book de saída identificado: " + nomeBookSaida);
+					}
 				}
 			}
+			
+			// Adicionar método à lista
+			listaMetodos.add(new DadosMetodo(nomeMetodo, tipoRetorno, nomeFluxoFormatado, nomeBookEntrada, nomeBookSaida));
+			System.out.println("\n✓ Método '" + nomeMetodo + "' adicionado com sucesso!");
 		}
 	
 		try {
@@ -248,43 +291,101 @@ public class automacao {
 					(nomeClasseHexagonal.length() > 1 ? nomeClasseHexagonal.substring(1) : "");
 			}
 			
-			// Preparar nomes dos books com Request/Response mantendo o padrão de case
-			String nomeBookEntradaRequest = nomeBookEntrada != null ? aplicarCasePattern(1, nomeBookEntrada, "Request") : "SEMBOOKDEENTRADARequest";
-			String nomeBookEntradaRequestVar = nomeBookEntrada != null ? aplicarCasePattern(2, nomeBookEntrada, "Request") : "sembookdeentradaRequest";
-			String nomeBookSaidaResponse = nomeBookSaida != null ? aplicarCasePattern(1, nomeBookSaida, "Response") : "SEMBOOKDESAIDAResponse";
-			String nomeBookSaidaResponseParam = nomeBookSaida != null ? aplicarCasePattern(2, nomeBookSaida, "") : "sembookdesaidaparam";
-			// Preparar nome do book de saída com "Resposta" para o tipo de retorno
-			String nomeBookSaidaResposta = nomeBookSaida != null ? aplicarCasePattern(1, nomeBookSaida, "Resposta") : "SEMBOOKDESAIDAResposta";
-			
-			// Definir tipo de retorno baseado na opção escolhida
-			String tipoRetornoString = "";
-			String retornoFinal = "";
-			String nomeVariavelRetorno = "";
-			boolean retornoEhVoid = (tipoRetorno == 3);
-			switch (tipoRetorno) {
-				case 1:
-					tipoRetornoString = nomeBookSaidaResposta;
-					nomeVariavelRetorno = aplicarCasePattern(2, nomeBookSaida != null ? nomeBookSaida : "sembookdesaida", "");
-					retornoFinal = "\t\treturn " + nomeVariavelRetorno + ";\n";
+			// Verificar se precisa importar List e Collections
+			boolean precisaList = false;
+			for (DadosMetodo metodo : listaMetodos) {
+				if (metodo.tipoRetorno == 2) {
+					precisaList = true;
 					break;
-				case 2:
-					tipoRetornoString = "List<" + nomeBookSaidaResposta + ">";
-					nomeVariavelRetorno = aplicarCasePattern(2, nomeBookSaida != null ? nomeBookSaida : "sembookdesaida", "");
-					retornoFinal = "\t\t// TODO: Retornar lista de " + nomeBookSaidaResposta.toLowerCase() + "\n\t\treturn Collections.emptyList();\n";
-					break;
-				case 3:
-					tipoRetornoString = "void";
-					nomeVariavelRetorno = ""; // Não é necessário para void
-					retornoFinal = "";
-					break;
-				default:
-					tipoRetornoString = nomeBookSaidaResposta;
-					nomeVariavelRetorno = aplicarCasePattern(2, nomeBookSaida != null ? nomeBookSaida : "sembookdesaida", "");
-					retornoFinal = "\t\treturn " + nomeVariavelRetorno + ";\n";
-					break;
+				}
 			}
 			
-			// Código a ser extraído (linhas 8-43)
+			// Gerar código dos métodos
+			StringBuilder codigoMetodos = new StringBuilder();
+			StringBuilder codigoMetodosAuxiliares = new StringBuilder();
+			
+			for (DadosMetodo metodo : listaMetodos) {
+				// Preparar nomes dos books com Request/Response mantendo o padrão de case
+				String nomeBookEntradaRequest = metodo.nomeBookEntrada != null ? aplicarCasePattern(1, metodo.nomeBookEntrada, "Request") : "SEMBOOKDEENTRADARequest";
+				String nomeBookEntradaRequestVar = metodo.nomeBookEntrada != null ? aplicarCasePattern(2, metodo.nomeBookEntrada, "Request") : "sembookdeentradaRequest";
+				String nomeBookSaidaResponse = metodo.nomeBookSaida != null ? aplicarCasePattern(1, metodo.nomeBookSaida, "Response") : "SEMBOOKDESAIDAResponse";
+				String nomeBookSaidaResponseParam = metodo.nomeBookSaida != null ? aplicarCasePattern(2, metodo.nomeBookSaida, "") : "sembookdesaidaparam";
+				// Preparar nome do book de saída com "Resposta" para o tipo de retorno
+				String nomeBookSaidaResposta = metodo.nomeBookSaida != null ? aplicarCasePattern(1, metodo.nomeBookSaida, "Resposta") : "SEMBOOKDESAIDAResposta";
+				
+				// Definir tipo de retorno baseado na opção escolhida
+				String tipoRetornoString = "";
+				String retornoFinal = "";
+				String nomeVariavelRetorno = "";
+				boolean retornoEhVoid = (metodo.tipoRetorno == 3);
+				switch (metodo.tipoRetorno) {
+					case 1:
+						tipoRetornoString = nomeBookSaidaResposta;
+						nomeVariavelRetorno = aplicarCasePattern(2, metodo.nomeBookSaida != null ? metodo.nomeBookSaida : "sembookdesaida", "");
+						retornoFinal = "\t\treturn " + nomeVariavelRetorno + ";\n";
+						break;
+					case 2:
+						tipoRetornoString = "List<" + nomeBookSaidaResposta + ">";
+						nomeVariavelRetorno = aplicarCasePattern(2, metodo.nomeBookSaida != null ? metodo.nomeBookSaida : "sembookdesaida", "");
+						retornoFinal = "\t\t// TODO: Retornar lista de " + nomeBookSaidaResposta.toLowerCase() + "\n\t\treturn Collections.emptyList();\n";
+						break;
+					case 3:
+						tipoRetornoString = "void";
+						nomeVariavelRetorno = "";
+						retornoFinal = "";
+						break;
+					default:
+						tipoRetornoString = nomeBookSaidaResposta;
+						nomeVariavelRetorno = aplicarCasePattern(2, metodo.nomeBookSaida != null ? metodo.nomeBookSaida : "sembookdesaida", "");
+						retornoFinal = "\t\treturn " + nomeVariavelRetorno + ";\n";
+						break;
+				}
+				
+				// Gerar código do método
+				codigoMetodos.append("\t@Override\n");
+				codigoMetodos.append("\tpublic ").append(tipoRetornoString).append(" ").append(metodo.nomeMetodo).append("(Proposta proposta) {\n");
+				codigoMetodos.append("\t\tLOGGER_TECNICO.info(\"Iniciando metodo ").append(metodo.nomeMetodo).append(" {}\", proposta);\n");
+				codigoMetodos.append("\t\t").append(metodo.nomeFluxoFormatado).append("Request req = new ").append(metodo.nomeFluxoFormatado).append("Request();\n");
+				codigoMetodos.append("\t\t").append(nomeBookEntradaRequest).append(" ").append(nomeBookEntradaRequestVar).append(" = PropostaConectaMapper.INSTANCE.toPcjwm2eRequest(proposta);\n");
+				codigoMetodos.append("\t\treq.set").append(capitalizar(nomeBookEntradaRequestVar)).append("(").append(nomeBookEntradaRequestVar).append(");\n");
+				codigoMetodos.append("\t\t\n");
+				codigoMetodos.append("\t\t").append(metodo.nomeFluxoFormatado).append("Response res = new ").append(metodo.nomeFluxoFormatado).append("Response();\n");
+				codigoMetodos.append("\t\tAtomicReference<").append(nomeBookSaidaResponse).append("> memory = new AtomicReference<>();\n");
+				codigoMetodos.append("\t\t\n");
+				codigoMetodos.append("\t\tLOGGER_TECNICO.info(\"Executando fluxo {} PADRAO\", FLUXO_ABRIR_PROPOSTA.toUpperCase());\n");
+				codigoMetodos.append("\t\tconectaClient.fluxo().executar(req, res,\n");
+				codigoMetodos.append("\t\t\t\tnew PccjiadlStatusHandler (").append(nomeBookSaidaResponseParam).append(" -> memory.set(pertence").append(capitalizar(nomeBookSaidaResponseParam)).append("(").append(nomeBookSaidaResponseParam).append("))));\n");
+				codigoMetodos.append("\t\t\t\t\n");
+				if (!retornoEhVoid) {
+					codigoMetodos.append("\t\t").append(nomeBookSaidaResposta).append(" ").append(nomeVariavelRetorno).append(" = null;\n");
+				}
+				codigoMetodos.append("\t\tif(Objects.nonNull(memory.get())){\n");
+				if (!retornoEhVoid) {
+					codigoMetodos.append("\t\t\t").append(nomeVariavelRetorno).append(" = (").append(nomeBookSaidaResposta).append(") memory.get();\n");
+				} else {
+					codigoMetodos.append("\t\t\tproposta.setNumeroProposta(Long.parseLong(memory.get().getCppstaCataoPJ()));\n");
+				}
+				codigoMetodos.append("\t\t}\n");
+				codigoMetodos.append("\t\t\n");
+				codigoMetodos.append("\t\tLOGGER_TECNICO.info(\"Proposta Salva - CPF:\" + proposta.getCpf().getCPF()\n");
+				codigoMetodos.append("\t\t\t\t+ \" CNPJ: \" + proposta.getCnpj().getCNPJ()\n");
+				codigoMetodos.append("\t\t\t\t+ \" Proposta: \" + proposta.getNumeroProposta());\n");
+				codigoMetodos.append(retornoFinal);
+				codigoMetodos.append("\t}\n\n");
+				
+				// Gerar método auxiliar se houver book de saída
+				if (metodo.nomeBookSaida != null && !metodo.nomeBookSaida.isEmpty()) {
+					codigoMetodosAuxiliares.append("\tprivate ").append(nomeBookSaidaResponse).append(" pertence").append(capitalizar(nomeBookSaidaResponseParam)).append("(final ").append(nomeBookSaidaResponse).append(" response) {\n");
+					codigoMetodosAuxiliares.append("\t\tif (Objects.nonNull(response)\n");
+					codigoMetodosAuxiliares.append("\t\t\t\t&& Objects.nonNull(response.getCppstaCataoPj())){\n");
+					codigoMetodosAuxiliares.append("\t\t\treturn response;\n");
+					codigoMetodosAuxiliares.append("\t\t}\n");
+					codigoMetodosAuxiliares.append("\t\treturn null;\n");
+					codigoMetodosAuxiliares.append("\t}\n\n");
+				}
+			}
+			
+			// Código da classe completa
 			String codigoPropostaConecta = 
 				"@RequiredArgsConstructor\n" +
 				"@Component\n" +
@@ -297,38 +398,8 @@ public class automacao {
 				"\tpublic static final int TIPO_LISTA_PADRAO = 0;\n" +
 				"\tprivate final ConectaCLient conectaClient;\n" +
 				"\n" +
-				"\t@Override\n" +
-				"\tpublic " + tipoRetornoString + " " + nomeMetodo + "(Proposta proposta) {\n" +
-				"\t\tLOGGER_TECNICO.info(\"Iniciando metodo " + nomeMetodo + " {}\", proposta);\n" +
-				"\t\t" + nomeFluxoFormatado + "Request req = new " + nomeFluxoFormatado + "Request();\n" +
-				"\t\t" + nomeBookEntradaRequest + " " + nomeBookEntradaRequestVar + " = PropostaConectaMapper.INSTANCE.toPcjwm2eRequest(proposta);\n" +
-				"\t\treq.set" + capitalizar(nomeBookEntradaRequestVar) + "(" + nomeBookEntradaRequestVar + ");\n" +
-				"\t\t\n" +
-				"\t\t" + nomeFluxoFormatado + "Response res = new " + nomeFluxoFormatado + "Response();\n" +
-				"\t\tAtomicReference<" + nomeBookSaidaResponse + "> memory = new AtomicReference<>();\n" +
-				"\t\t\n" +
-				"\t\tLOGGER_TECNICO.info(\"Executando fluxo {} PADRAO\", FLUXO_ABRIR_PROPOSTA.toUpperCase());\n" +
-				"\t\tconectaClient.fluxo().executar(req, res,\n" +
-				"\t\t\t\tnew PccjiadlStatusHandler (" + nomeBookSaidaResponseParam + " -> memory.set(pertence" + capitalizar(nomeBookSaidaResponseParam) + "(" + nomeBookSaidaResponseParam + "))));\n" +
-				"\t\t\t\t\n" +
-				"\t\t" + (!retornoEhVoid ? nomeBookSaidaResposta + " " + nomeVariavelRetorno + " = null;\n" : "") +
-				"\t\tif(Objects.nonNull(memory.get())){\n" +
-				(!retornoEhVoid ? "\t\t\t" + nomeVariavelRetorno + " = (" + nomeBookSaidaResposta + ") memory.get();\n" : "\t\t\tproposta.setNumeroProposta(Long.parseLong(memory.get().getCppstaCataoPJ()));\n") +
-				"\t\t}\n" +
-				"\t\t\n" +
-				"\t\tLOGGER_TECNICO.info(\"Proposta Salva - CPF:\" + proposta.getCpf().getCPF()\n" +
-				"\t\t\t\t+ \" CNPJ: \" + proposta.getCnpj().getCNPJ()\n" +
-				"\t\t\t\t+ \" Proposta: \" + proposta.getNumeroProposta());\n" +
-				retornoFinal +
-				"\t}\n" +
-				"\n" +
-				"\tprivate " + nomeBookSaidaResponse + " pertence" + capitalizar(nomeBookSaidaResponseParam) + "(final " + nomeBookSaidaResponse + " response) {\n" +
-				"\t\tif (Objects.nonNull(response)\n" +
-				"\t\t\t\t&& Objects.nonNull(response.getCppstaCataoPj())){\n" +
-				"\t\t\treturn response;\n" +
-				"\t\t}\n" +
-				"\t\treturn null;\n" +
-				"\t}\n" +
+				codigoMetodos.toString() +
+				codigoMetodosAuxiliares.toString() +
 				"}";
 
 			// Caminho para a pasta gerados
@@ -353,8 +424,8 @@ public class automacao {
 				"import java.util.concurrent.atomic.AtomicReference;\n" +
 				"import java.util.Objects;\n";
 			
-			// Adicionar imports de List e Collections se o retorno for lista
-			if (tipoRetorno == 2) {
+			// Adicionar imports de List e Collections se algum método retornar lista
+			if (precisaList) {
 				imports += "import java.util.List;\n" +
 					"import java.util.Collections;\n";
 			}
