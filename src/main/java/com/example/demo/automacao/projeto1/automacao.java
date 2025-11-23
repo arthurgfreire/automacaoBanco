@@ -646,7 +646,7 @@ public class automacao {
 			System.out.println("Nome do fluxo: " + nomeFluxoFormatado);
 			
 			// Pedir arquivo de entrada (obrigatório) - direto sem perguntar se existe
-			System.out.println("\n=== FLUXO DE ENTRADA ===");
+			System.out.println("\n=== BOOK DE ENTRADA ===");
 			String arquivoEntrada = pedirCaminhoArquivo(scanner, "entrada");
 			if (arquivoEntrada == null) {
 				System.err.println("Fluxo de entrada é obrigatório. Tente novamente.");
@@ -661,23 +661,29 @@ public class automacao {
 			}
 			System.out.println("Nome do Book de entrada identificado: " + nomeBookEntrada);
 			
-			// Perguntar sobre fluxo de saída (opcional)
-			System.out.println("\n=== FLUXO DE SAÍDA ===");
-			System.out.print("Existe Book de saída? (s/n): ");
-			String respostaSaida = scanner.nextLine().trim().toLowerCase();
-			
+			// Perguntar sobre Book de saída baseado no tipo de retorno
 			String arquivoSaida = null;
 			String nomeBookSaida = null;
-			if (respostaSaida.equals("s") || respostaSaida.equals("sim")) {
+			
+			if (tipoRetorno == 3) {
+				// Tipo void - não precisa de book de saída
+				nomeBookSaida = null;
+			} else {
+				// Tipo 1 ou 2 - book de saída é obrigatório
+				System.out.println("\n=== BOOK DE SAÍDA ===");
 				arquivoSaida = pedirCaminhoArquivo(scanner, "saída");
-				if (arquivoSaida != null) {
-					System.out.println("Arquivo de saída selecionado: " + arquivoSaida);
-					// Extrair nome do book automaticamente do nome do arquivo
-					nomeBookSaida = extrairNomeArquivoSemExtensao(arquivoSaida);
-					if (nomeBookSaida != null && !nomeBookSaida.isEmpty()) {
-						System.out.println("Nome do Book de saída identificado: " + nomeBookSaida);
-					}
+				if (arquivoSaida == null) {
+					System.err.println("Book de saída é obrigatório para este tipo de retorno. Tente novamente.");
+					continue;
 				}
+				System.out.println("Arquivo de saída selecionado: " + arquivoSaida);
+				// Extrair nome do book automaticamente do nome do arquivo
+				nomeBookSaida = extrairNomeArquivoSemExtensao(arquivoSaida);
+				if (nomeBookSaida == null || nomeBookSaida.isEmpty()) {
+					System.err.println("Não foi possível extrair o nome do Book de saída do arquivo. Tente novamente.");
+					continue;
+				}
+				System.out.println("Nome do Book de saída identificado: " + nomeBookSaida);
 			}
 			
 			// Adicionar método à lista
