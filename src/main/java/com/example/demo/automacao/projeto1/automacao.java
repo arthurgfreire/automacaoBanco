@@ -340,11 +340,15 @@ public class automacao {
 			return;
 		}
 		
-		// Extrair fluxos únicos e mapear ao book de saída
+		// Extrair fluxos únicos e mapear aos books de entrada e saída
 		Map<String, String> fluxoParaBookSaida = new HashMap<>();
+		Map<String, String> fluxoParaBookEntrada = new HashMap<>();
 		for (DadosMetodo metodo : listaMetodos) {
 			if (metodo.nomeBookSaida != null && !metodo.nomeBookSaida.isEmpty()) {
 				fluxoParaBookSaida.put(metodo.nomeFluxoFormatado, metodo.nomeBookSaida);
+			}
+			if (metodo.nomeBookEntrada != null && !metodo.nomeBookEntrada.isEmpty()) {
+				fluxoParaBookEntrada.put(metodo.nomeFluxoFormatado, metodo.nomeBookEntrada);
 			}
 		}
 		
@@ -393,8 +397,28 @@ public class automacao {
 					Files.createDirectories(handlerPath);
 				}
 				
-				// Obter book de saída para este fluxo
+				// Obter books de entrada e saída para este fluxo
 				String nomeBookSaida = fluxoParaBookSaida.get(nomeFluxoFormatado);
+				String nomeBookEntrada = fluxoParaBookEntrada.get(nomeFluxoFormatado);
+				
+				// Gerar arquivos dos books dentro da pasta book
+				if (nomeBookEntrada != null && !nomeBookEntrada.isEmpty()) {
+					String nomeBookEntradaRequest = aplicarCasePattern(1, nomeBookEntrada, "Request");
+					String codigoBookEntradaRequest = gerarCodigoBookRequest(nomeBookEntradaRequest, nomeFluxoMinusculo);
+					File arquivoBookEntradaRequest = new File(bookPath.toFile(), nomeBookEntradaRequest + ".java");
+					try (FileWriter writer = new FileWriter(arquivoBookEntradaRequest)) {
+						writer.write(codigoBookEntradaRequest);
+					}
+				}
+				
+				if (nomeBookSaida != null && !nomeBookSaida.isEmpty()) {
+					String nomeBookSaidaResponse = aplicarCasePattern(1, nomeBookSaida, "Response");
+					String codigoBookSaidaResponse = gerarCodigoBookResponse(nomeBookSaidaResponse, nomeFluxoMinusculo);
+					File arquivoBookSaidaResponse = new File(bookPath.toFile(), nomeBookSaidaResponse + ".java");
+					try (FileWriter writer = new FileWriter(arquivoBookSaidaResponse)) {
+						writer.write(codigoBookSaidaResponse);
+					}
+				}
 				
 				// Gerar arquivo Request.java
 				String codigoRequest = gerarCodigoRequest(nomeFluxoFormatado, nomeFluxoMinusculo);
@@ -438,7 +462,30 @@ public class automacao {
 					"-d", srcMainJavaPath.toString(),
 					arquivoStatusHandler.getAbsolutePath());
 				
-				if (resultadoRequest == 0 && resultadoResponse == 0 && resultadoHandler == 0) {
+				// Compilar arquivos dos books
+				boolean compilacaoOk = (resultadoRequest == 0 && resultadoResponse == 0 && resultadoHandler == 0);
+				
+				if (nomeBookEntrada != null && !nomeBookEntrada.isEmpty()) {
+					String nomeBookEntradaRequest = aplicarCasePattern(1, nomeBookEntrada, "Request");
+					File arquivoBookEntradaRequest = new File(bookPath.toFile(), nomeBookEntradaRequest + ".java");
+					int resultadoBookEntradaRequest = compiler.run(null, null, null,
+						"-cp", classpath,
+						"-d", srcMainJavaPath.toString(),
+						arquivoBookEntradaRequest.getAbsolutePath());
+					compilacaoOk = compilacaoOk && (resultadoBookEntradaRequest == 0);
+				}
+				
+				if (nomeBookSaida != null && !nomeBookSaida.isEmpty()) {
+					String nomeBookSaidaResponse = aplicarCasePattern(1, nomeBookSaida, "Response");
+					File arquivoBookSaidaResponse = new File(bookPath.toFile(), nomeBookSaidaResponse + ".java");
+					int resultadoBookSaidaResponse = compiler.run(null, null, null,
+						"-cp", classpath,
+						"-d", srcMainJavaPath.toString(),
+						arquivoBookSaidaResponse.getAbsolutePath());
+					compilacaoOk = compilacaoOk && (resultadoBookSaidaResponse == 0);
+				}
+				
+				if (compilacaoOk) {
 					System.out.println("✓ Fluxo '" + nomeFluxoFormatado + "' gerado com sucesso!");
 				} else {
 					System.err.println("Erro ao compilar arquivos do fluxo '" + nomeFluxoFormatado + "'");
@@ -471,6 +518,30 @@ public class automacao {
 		return "package " + packageName + ";\n\n" +
 			"public class " + nomeFluxoFormatado + "Response {\n" +
 			"\t// TODO: Implementar campos do Response\n" +
+			"}\n";
+	}
+	
+	/**
+	 * Gera o código Java para a classe Request do book de entrada.
+	 */
+	private static String gerarCodigoBookRequest(String nomeBookRequest, String nomeFluxoMinusculo) {
+		String packageName = "com.example.demo.automacao.projeto1.gerados.fluxos." + nomeFluxoMinusculo + ".book";
+		
+		return "package " + packageName + ";\n\n" +
+			"public class " + nomeBookRequest + " {\n" +
+			"\t// TODO: Implementar campos do Book Request\n" +
+			"}\n";
+	}
+	
+	/**
+	 * Gera o código Java para a classe Response do book de saída.
+	 */
+	private static String gerarCodigoBookResponse(String nomeBookResponse, String nomeFluxoMinusculo) {
+		String packageName = "com.example.demo.automacao.projeto1.gerados.fluxos." + nomeFluxoMinusculo + ".book";
+		
+		return "package " + packageName + ";\n\n" +
+			"public class " + nomeBookResponse + " {\n" +
+			"\t// TODO: Implementar campos do Book Response\n" +
 			"}\n";
 	}
 	
