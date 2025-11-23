@@ -238,26 +238,30 @@ public class automacao {
 				writer.write(codigoBcaqSessaoMainframeExpiradaException);
 			}
 			
-			// Compilar BcaqStatusHandler
+			// Obter diretório raiz do código fonte (src/main/java)
+			String baseDir = System.getProperty("user.dir");
+			Path srcMainJavaPath = Paths.get(baseDir, "src", "main", "java");
+			
+			// Compilar BcaqStatusHandler (compilar para src/main/java para criar estrutura correta de pacotes)
 			int resultadoHandler = compiler.run(null, null, null,
 				"-cp", classpath,
-				"-d", handlerPath.toString(),
+				"-d", srcMainJavaPath.toString(),
 				arquivoBcaqStatusHandler.getAbsolutePath());
 			
-			// Compilar exceções
+			// Compilar exceções (compilar para src/main/java para criar estrutura correta de pacotes)
 			int resultadoBusinessException = compiler.run(null, null, null,
 				"-cp", classpath,
-				"-d", exceptionPath.toString(),
+				"-d", srcMainJavaPath.toString(),
 				arquivoBcaqBusinessException.getAbsolutePath());
 			
 			int resultadoFalhaSistemicaException = compiler.run(null, null, null,
 				"-cp", classpath,
-				"-d", exceptionPath.toString(),
+				"-d", srcMainJavaPath.toString(),
 				arquivoBcaqFalhaSistemicaException.getAbsolutePath());
 			
 			int resultadoSessaoMainframeExpiradaException = compiler.run(null, null, null,
 				"-cp", classpath,
-				"-d", exceptionPath.toString(),
+				"-d", srcMainJavaPath.toString(),
 				arquivoBcaqSessaoMainframeExpiradaException.getAbsolutePath());
 			
 			if (resultadoHandler == 0 && resultadoBusinessException == 0 && 
@@ -413,21 +417,25 @@ public class automacao {
 					writer.write(codigoStatusHandler);
 				}
 				
-				// Compilar arquivos Request e Response
+				// Obter diretório raiz do código fonte (src/main/java)
+				String baseDir = System.getProperty("user.dir");
+				Path srcMainJavaPath = Paths.get(baseDir, "src", "main", "java");
+				
+				// Compilar arquivos Request e Response (compilar para src/main/java para criar estrutura correta de pacotes)
 				int resultadoRequest = compiler.run(null, null, null,
 					"-cp", classpath,
-					"-d", fluxoPath.toString(),
+					"-d", srcMainJavaPath.toString(),
 					arquivoRequest.getAbsolutePath());
 				
 				int resultadoResponse = compiler.run(null, null, null,
 					"-cp", classpath,
-					"-d", fluxoPath.toString(),
+					"-d", srcMainJavaPath.toString(),
 					arquivoResponse.getAbsolutePath());
 				
-				// Compilar StatusHandler
+				// Compilar StatusHandler (compilar para src/main/java para criar estrutura correta de pacotes)
 				int resultadoHandler = compiler.run(null, null, null,
 					"-cp", classpath,
-					"-d", handlerPath.toString(),
+					"-d", srcMainJavaPath.toString(),
 					arquivoStatusHandler.getAbsolutePath());
 				
 				if (resultadoRequest == 0 && resultadoResponse == 0 && resultadoHandler == 0) {
@@ -779,9 +787,12 @@ public class automacao {
 			// Configurar o classpath para incluir as dependências do projeto
 			String classpath = System.getProperty("java.class.path");
 			
+			// Obter diretório raiz do código fonte (src/main/java) para compilação correta
+			Path srcMainJavaPath = Paths.get(baseDir, "src", "main", "java");
+			
 			int resultado = compiler.run(null, null, null,
 				"-cp", classpath,
-				"-d", geradosPath.toString(),
+				"-d", srcMainJavaPath.toString(),
 				arquivoJava.getAbsolutePath());
 
 			if (resultado == 0) {
