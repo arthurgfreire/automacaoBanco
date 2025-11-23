@@ -175,6 +175,146 @@ public class automacao {
 			return null;
 		}
 	}
+	
+	/**
+	 * Gera os arquivos de fluxos (Request, Response, StatusHandler) para cada fluxo único.
+	 */
+	private static void gerarFluxos(List<String> fluxosUnicos, Path geradosPath) {
+		if (fluxosUnicos == null || fluxosUnicos.isEmpty()) {
+			return;
+		}
+		
+		// Criar pasta fluxos dentro de gerados
+		Path fluxosPath = geradosPath.resolve("fluxos");
+		try {
+			if (!Files.exists(fluxosPath)) {
+				Files.createDirectories(fluxosPath);
+				System.out.println("Pasta 'fluxos' criada: " + fluxosPath);
+			}
+			
+			JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+			if (compiler == null) {
+				System.err.println("Compilador Java não encontrado. Não foi possível gerar os fluxos.");
+				return;
+			}
+			
+			String classpath = System.getProperty("java.class.path");
+			
+			for (String nomeFluxoFormatado : fluxosUnicos) {
+				// Nome do fluxo em minúsculo para a pasta
+				String nomeFluxoMinusculo = nomeFluxoFormatado.toLowerCase();
+				Path fluxoPath = fluxosPath.resolve(nomeFluxoMinusculo);
+				
+				// Criar pasta do fluxo
+				if (!Files.exists(fluxoPath)) {
+					Files.createDirectories(fluxoPath);
+					System.out.println("Pasta do fluxo criada: " + fluxoPath);
+				}
+				
+				// Criar pastas book e handler
+				Path bookPath = fluxoPath.resolve("book");
+				Path handlerPath = fluxoPath.resolve("handler");
+				if (!Files.exists(bookPath)) {
+					Files.createDirectories(bookPath);
+				}
+				if (!Files.exists(handlerPath)) {
+					Files.createDirectories(handlerPath);
+				}
+				
+				// Gerar arquivo Request.java
+				String codigoRequest = gerarCodigoRequest(nomeFluxoFormatado, nomeFluxoMinusculo);
+				File arquivoRequest = new File(fluxoPath.toFile(), nomeFluxoFormatado + "Request.java");
+				try (FileWriter writer = new FileWriter(arquivoRequest)) {
+					writer.write(codigoRequest);
+				}
+				
+				// Gerar arquivo Response.java
+				String codigoResponse = gerarCodigoResponse(nomeFluxoFormatado, nomeFluxoMinusculo);
+				File arquivoResponse = new File(fluxoPath.toFile(), nomeFluxoFormatado + "Response.java");
+				try (FileWriter writer = new FileWriter(arquivoResponse)) {
+					writer.write(codigoResponse);
+				}
+				
+				// Gerar arquivo StatusHandler.java
+				String codigoStatusHandler = gerarCodigoStatusHandler(nomeFluxoFormatado, nomeFluxoMinusculo);
+				File arquivoStatusHandler = new File(handlerPath.toFile(), nomeFluxoFormatado + "StatusHandler.java");
+				try (FileWriter writer = new FileWriter(arquivoStatusHandler)) {
+					writer.write(codigoStatusHandler);
+				}
+				
+				// Compilar arquivos Request e Response
+				int resultadoRequest = compiler.run(null, null, null,
+					"-cp", classpath,
+					"-d", fluxoPath.toString(),
+					arquivoRequest.getAbsolutePath());
+				
+				int resultadoResponse = compiler.run(null, null, null,
+					"-cp", classpath,
+					"-d", fluxoPath.toString(),
+					arquivoResponse.getAbsolutePath());
+				
+				// Compilar StatusHandler
+				int resultadoHandler = compiler.run(null, null, null,
+					"-cp", classpath,
+					"-d", handlerPath.toString(),
+					arquivoStatusHandler.getAbsolutePath());
+				
+				if (resultadoRequest == 0 && resultadoResponse == 0 && resultadoHandler == 0) {
+					System.out.println("✓ Fluxo '" + nomeFluxoFormatado + "' gerado com sucesso!");
+				} else {
+					System.err.println("Erro ao compilar arquivos do fluxo '" + nomeFluxoFormatado + "'");
+				}
+			}
+		} catch (IOException e) {
+			System.err.println("Erro ao criar estrutura de fluxos: " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * Gera o código Java para a classe Request do fluxo.
+	 */
+	private static String gerarCodigoRequest(String nomeFluxoFormatado, String nomeFluxoMinusculo) {
+		String packageName = "com.example.demo.automacao.projeto1.gerados.fluxos." + nomeFluxoMinusculo;
+		
+		return "package " + packageName + ";\n\n" +
+			"public class " + nomeFluxoFormatado + "Request {\n" +
+			"\t// TODO: Implementar campos do Request\n" +
+			"}\n";
+	}
+	
+	/**
+	 * Gera o código Java para a classe Response do fluxo.
+	 */
+	private static String gerarCodigoResponse(String nomeFluxoFormatado, String nomeFluxoMinusculo) {
+		String packageName = "com.example.demo.automacao.projeto1.gerados.fluxos." + nomeFluxoMinusculo;
+		
+		return "package " + packageName + ";\n\n" +
+			"public class " + nomeFluxoFormatado + "Response {\n" +
+			"\t// TODO: Implementar campos do Response\n" +
+			"}\n";
+	}
+	
+	/**
+	 * Gera o código Java para a classe StatusHandler do fluxo.
+	 */
+	private static String gerarCodigoStatusHandler(String nomeFluxoFormatado, String nomeFluxoMinusculo) {
+		String packageName = "com.example.demo.automacao.projeto1.gerados.fluxos." + nomeFluxoMinusculo + ".handler";
+		
+		return "package " + packageName + ";\n\n" +
+			"import java.util.function.Consumer;\n\n" +
+			"public class " + nomeFluxoFormatado + "StatusHandler {\n" +
+			"\tprivate Consumer<Object> handler;\n\n" +
+			"\tpublic " + nomeFluxoFormatado + "StatusHandler(Consumer<Object> handler) {\n" +
+			"\t\tthis.handler = handler;\n" +
+			"\t}\n\n" +
+			"\tpublic void accept(Object obj) {\n" +
+			"\t\tif (handler != null) {\n" +
+			"\t\t\thandler.accept(obj);\n" +
+			"\t\t}\n" +
+			"\t}\n" +
+			"}\n";
+	}
 
 	private static void conecta(Scanner scanner) {
 		// Perguntar o nome da classe para criar o arquivo Hexagonal
@@ -440,6 +580,17 @@ public class automacao {
 			
 			System.out.println("Arquivo .java criado: " + arquivoJava.getAbsolutePath());
 
+			// Extrair fluxos únicos
+			List<String> fluxosUnicos = new ArrayList<>();
+			for (DadosMetodo metodo : listaMetodos) {
+				if (!fluxosUnicos.contains(metodo.nomeFluxoFormatado)) {
+					fluxosUnicos.add(metodo.nomeFluxoFormatado);
+				}
+			}
+			
+			// Gerar arquivos de fluxos
+			gerarFluxos(fluxosUnicos, geradosPath);
+			
 			// Compilar o arquivo .java para .class
 			JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
 			if (compiler == null) {
