@@ -179,6 +179,156 @@ public class automacao {
 	}
 	
 	/**
+	 * Gera as pastas handler e mapper dentro de gerados, com suas respectivas classes.
+	 */
+	private static void gerarHandlerEMapper(Path geradosPath) {
+		try {
+			// Criar pasta handler
+			Path handlerPath = geradosPath.resolve("handler");
+			if (!Files.exists(handlerPath)) {
+				Files.createDirectories(handlerPath);
+				System.out.println("Pasta 'handler' criada: " + handlerPath);
+			}
+			
+			// Criar pasta mapper
+			Path mapperPath = geradosPath.resolve("mapper");
+			if (!Files.exists(mapperPath)) {
+				Files.createDirectories(mapperPath);
+				System.out.println("Pasta 'mapper' criada: " + mapperPath);
+			}
+			
+			// Criar pasta exception dentro de handler
+			Path exceptionPath = handlerPath.resolve("exception");
+			if (!Files.exists(exceptionPath)) {
+				Files.createDirectories(exceptionPath);
+				System.out.println("Pasta 'exception' criada: " + exceptionPath);
+			}
+			
+			JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+			if (compiler == null) {
+				System.err.println("Compilador Java não encontrado. Não foi possível gerar handler e mapper.");
+				return;
+			}
+			
+			String classpath = System.getProperty("java.class.path");
+			
+			// Gerar BcaqStatusHandler.java
+			String codigoBcaqStatusHandler = gerarCodigoBcaqStatusHandler();
+			File arquivoBcaqStatusHandler = new File(handlerPath.toFile(), "BcaqStatusHandler.java");
+			try (FileWriter writer = new FileWriter(arquivoBcaqStatusHandler)) {
+				writer.write(codigoBcaqStatusHandler);
+			}
+			
+			// Gerar exceções
+			String codigoBcaqBusinessException = gerarCodigoBcaqBusinessException();
+			File arquivoBcaqBusinessException = new File(exceptionPath.toFile(), "BcaqBusinessException.java");
+			try (FileWriter writer = new FileWriter(arquivoBcaqBusinessException)) {
+				writer.write(codigoBcaqBusinessException);
+			}
+			
+			String codigoBcaqFalhaSistemicaException = gerarCodigoBcaqFalhaSistemicaException();
+			File arquivoBcaqFalhaSistemicaException = new File(exceptionPath.toFile(), "BcaqFalhaSistemicaException.java");
+			try (FileWriter writer = new FileWriter(arquivoBcaqFalhaSistemicaException)) {
+				writer.write(codigoBcaqFalhaSistemicaException);
+			}
+			
+			String codigoBcaqSessaoMainframeExpiradaException = gerarCodigoBcaqSessaoMainframeExpiradaException();
+			File arquivoBcaqSessaoMainframeExpiradaException = new File(exceptionPath.toFile(), "BcaqSessaoMainframeExpiradaException.java");
+			try (FileWriter writer = new FileWriter(arquivoBcaqSessaoMainframeExpiradaException)) {
+				writer.write(codigoBcaqSessaoMainframeExpiradaException);
+			}
+			
+			// Compilar BcaqStatusHandler
+			int resultadoHandler = compiler.run(null, null, null,
+				"-cp", classpath,
+				"-d", handlerPath.toString(),
+				arquivoBcaqStatusHandler.getAbsolutePath());
+			
+			// Compilar exceções
+			int resultadoBusinessException = compiler.run(null, null, null,
+				"-cp", classpath,
+				"-d", exceptionPath.toString(),
+				arquivoBcaqBusinessException.getAbsolutePath());
+			
+			int resultadoFalhaSistemicaException = compiler.run(null, null, null,
+				"-cp", classpath,
+				"-d", exceptionPath.toString(),
+				arquivoBcaqFalhaSistemicaException.getAbsolutePath());
+			
+			int resultadoSessaoMainframeExpiradaException = compiler.run(null, null, null,
+				"-cp", classpath,
+				"-d", exceptionPath.toString(),
+				arquivoBcaqSessaoMainframeExpiradaException.getAbsolutePath());
+			
+			if (resultadoHandler == 0 && resultadoBusinessException == 0 && 
+				resultadoFalhaSistemicaException == 0 && resultadoSessaoMainframeExpiradaException == 0) {
+				System.out.println("✓ Handler, Mapper e Exceptions gerados com sucesso!");
+			} else {
+				System.err.println("Erro ao compilar alguns arquivos de handler/mapper/exception");
+			}
+			
+		} catch (IOException e) {
+			System.err.println("Erro ao criar estrutura de handler/mapper: " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * Gera o código Java para a classe BcaqStatusHandler.
+	 */
+	private static String gerarCodigoBcaqStatusHandler() {
+		return "package com.example.demo.automacao.projeto1.gerados.handler;\n\n" +
+			"public abstract class BcaqStatusHandler<REQ, RES> {\n" +
+			"\t// Classe base para handlers de status\n" +
+			"}\n";
+	}
+	
+	/**
+	 * Gera o código Java para a classe BcaqBusinessException.
+	 */
+	private static String gerarCodigoBcaqBusinessException() {
+		return "package com.example.demo.automacao.projeto1.gerados.handler.exception;\n\n" +
+			"public class BcaqBusinessException extends Exception {\n" +
+			"\tpublic BcaqBusinessException(String message) {\n" +
+			"\t\tsuper(message);\n" +
+			"\t}\n\n" +
+			"\tpublic BcaqBusinessException(String message, Throwable cause) {\n" +
+			"\t\tsuper(message, cause);\n" +
+			"\t}\n" +
+			"}\n";
+	}
+	
+	/**
+	 * Gera o código Java para a classe BcaqFalhaSistemicaException.
+	 */
+	private static String gerarCodigoBcaqFalhaSistemicaException() {
+		return "package com.example.demo.automacao.projeto1.gerados.handler.exception;\n\n" +
+			"public class BcaqFalhaSistemicaException extends Exception {\n" +
+			"\tpublic BcaqFalhaSistemicaException(String message) {\n" +
+			"\t\tsuper(message);\n" +
+			"\t}\n\n" +
+			"\tpublic BcaqFalhaSistemicaException(String message, Throwable cause) {\n" +
+			"\t\tsuper(message, cause);\n" +
+			"\t}\n" +
+			"}\n";
+	}
+	
+	/**
+	 * Gera o código Java para a classe BcaqSessaoMainframeExpiradaException.
+	 */
+	private static String gerarCodigoBcaqSessaoMainframeExpiradaException() {
+		return "package com.example.demo.automacao.projeto1.gerados.handler.exception;\n\n" +
+			"public class BcaqSessaoMainframeExpiradaException extends Exception {\n" +
+			"\tpublic BcaqSessaoMainframeExpiradaException(String message) {\n" +
+			"\t\tsuper(message);\n" +
+			"\t}\n\n" +
+			"\tpublic BcaqSessaoMainframeExpiradaException(String message, Throwable cause) {\n" +
+			"\t\tsuper(message, cause);\n" +
+			"\t}\n" +
+			"}\n";
+	}
+	
+	/**
 	 * Gera os arquivos de fluxos (Request, Response, StatusHandler) para cada fluxo único.
 	 */
 	private static void gerarFluxos(List<DadosMetodo> listaMetodos, Path geradosPath) {
@@ -333,6 +483,7 @@ public class automacao {
 			"import org.slf4j.Logger;\n" +
 			"import org.slf4j.LoggerFactory;\n" +
 			"import java.util.function.Consumer;\n" +
+			"import com.example.demo.automacao.projeto1.gerados.handler.BcaqStatusHandler;\n" +
 			"import com.example.demo.automacao.projeto1.gerados.fluxos." + nomeFluxoMinusculo + "." + nomeFluxoFormatado + "Request;\n" +
 			"import com.example.demo.automacao.projeto1.gerados.fluxos." + nomeFluxoMinusculo + "." + nomeFluxoFormatado + "Response;\n\n" +
 			"@RequiredArgsConstructor\n" +
@@ -583,6 +734,9 @@ public class automacao {
 				Files.createDirectories(geradosPath);
 				System.out.println("Pasta 'gerados' criada: " + geradosPath);
 			}
+			
+			// Criar estrutura de pastas handler e mapper e suas classes
+			gerarHandlerEMapper(geradosPath);
 
 			// Criar o arquivo .java
 			File arquivoJava = new File(geradosPath.toFile(), nomeClasseFormatado + "Conecta.java");
