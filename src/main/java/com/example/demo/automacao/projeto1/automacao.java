@@ -9,7 +9,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 public class automacao {
@@ -179,9 +181,17 @@ public class automacao {
 	/**
 	 * Gera os arquivos de fluxos (Request, Response, StatusHandler) para cada fluxo único.
 	 */
-	private static void gerarFluxos(List<String> fluxosUnicos, Path geradosPath) {
-		if (fluxosUnicos == null || fluxosUnicos.isEmpty()) {
+	private static void gerarFluxos(List<DadosMetodo> listaMetodos, Path geradosPath) {
+		if (listaMetodos == null || listaMetodos.isEmpty()) {
 			return;
+		}
+		
+		// Extrair fluxos únicos e mapear ao book de saída
+		Map<String, String> fluxoParaBookSaida = new HashMap<>();
+		for (DadosMetodo metodo : listaMetodos) {
+			if (metodo.nomeBookSaida != null && !metodo.nomeBookSaida.isEmpty()) {
+				fluxoParaBookSaida.put(metodo.nomeFluxoFormatado, metodo.nomeBookSaida);
+			}
 		}
 		
 		// Criar pasta fluxos dentro de gerados
@@ -199,6 +209,14 @@ public class automacao {
 			}
 			
 			String classpath = System.getProperty("java.class.path");
+			
+			// Extrair fluxos únicos
+			List<String> fluxosUnicos = new ArrayList<>();
+			for (DadosMetodo metodo : listaMetodos) {
+				if (!fluxosUnicos.contains(metodo.nomeFluxoFormatado)) {
+					fluxosUnicos.add(metodo.nomeFluxoFormatado);
+				}
+			}
 			
 			for (String nomeFluxoFormatado : fluxosUnicos) {
 				// Nome do fluxo em minúsculo para a pasta
@@ -221,6 +239,9 @@ public class automacao {
 					Files.createDirectories(handlerPath);
 				}
 				
+				// Obter book de saída para este fluxo
+				String nomeBookSaida = fluxoParaBookSaida.get(nomeFluxoFormatado);
+				
 				// Gerar arquivo Request.java
 				String codigoRequest = gerarCodigoRequest(nomeFluxoFormatado, nomeFluxoMinusculo);
 				File arquivoRequest = new File(fluxoPath.toFile(), nomeFluxoFormatado + "Request.java");
@@ -236,7 +257,7 @@ public class automacao {
 				}
 				
 				// Gerar arquivo StatusHandler.java
-				String codigoStatusHandler = gerarCodigoStatusHandler(nomeFluxoFormatado, nomeFluxoMinusculo);
+				String codigoStatusHandler = gerarCodigoStatusHandler(nomeFluxoFormatado, nomeFluxoMinusculo, nomeBookSaida);
 				File arquivoStatusHandler = new File(handlerPath.toFile(), nomeFluxoFormatado + "StatusHandler.java");
 				try (FileWriter writer = new FileWriter(arquivoStatusHandler)) {
 					writer.write(codigoStatusHandler);
@@ -298,20 +319,31 @@ public class automacao {
 	/**
 	 * Gera o código Java para a classe StatusHandler do fluxo.
 	 */
-	private static String gerarCodigoStatusHandler(String nomeFluxoFormatado, String nomeFluxoMinusculo) {
+	private static String gerarCodigoStatusHandler(String nomeFluxoFormatado, String nomeFluxoMinusculo, String nomeBookSaida) {
 		String packageName = "com.example.demo.automacao.projeto1.gerados.fluxos." + nomeFluxoMinusculo + ".handler";
 		
+		// Preparar nomes do book de saída
+		String nomeBookSaidaResponse = nomeBookSaida != null ? aplicarCasePattern(1, nomeBookSaida, "Response") : "SEMBOOKDESAIDAResponse";
+		String nomeBookSaidaResponseVar = nomeBookSaida != null ? aplicarCasePattern(2, nomeBookSaida, "Response") : "sembookdesaidarResponse";
+		String nomeMetodoGetter = "get" + capitalizar(nomeBookSaidaResponseVar);
+		
+		// Gerar código conforme o exemplo fornecido
 		return "package " + packageName + ";\n\n" +
-			"import java.util.function.Consumer;\n\n" +
-			"public class " + nomeFluxoFormatado + "StatusHandler {\n" +
-			"\tprivate Consumer<Object> handler;\n\n" +
-			"\tpublic " + nomeFluxoFormatado + "StatusHandler(Consumer<Object> handler) {\n" +
-			"\t\tthis.handler = handler;\n" +
-			"\t}\n\n" +
-			"\tpublic void accept(Object obj) {\n" +
-			"\t\tif (handler != null) {\n" +
-			"\t\t\thandler.accept(obj);\n" +
-			"\t\t}\n" +
+			"import lombok.RequiredArgsConstructor;\n" +
+			"import org.slf4j.Logger;\n" +
+			"import org.slf4j.LoggerFactory;\n" +
+			"import java.util.function.Consumer;\n" +
+			"import com.example.demo.automacao.projeto1.gerados.fluxos." + nomeFluxoMinusculo + "." + nomeFluxoFormatado + "Request;\n" +
+			"import com.example.demo.automacao.projeto1.gerados.fluxos." + nomeFluxoMinusculo + "." + nomeFluxoFormatado + "Response;\n\n" +
+			"@RequiredArgsConstructor\n" +
+			"public class " + nomeFluxoFormatado + "StatusHandler extends BcaqStatusHandler<" + nomeFluxoFormatado + "Request, " + nomeFluxoFormatado + "Response>\n" +
+			"\t\timplements FrwkExecucaoStatusHandler<" + nomeFluxoFormatado + "Request, " + nomeFluxoFormatado + "Response> {\n\n" +
+			"\tprivate static final Logger LOGGER_TECNICO = LoggerFactory.getLogger(" + nomeFluxoFormatado + "StatusHandler.class);\n" +
+			"\tprivate final Consumer<" + nomeBookSaidaResponse + "> success;\n\n" +
+			"\t@Override\n" +
+			"\tpublic void sucesso(FrwkExecucao execucao, " + nomeFluxoFormatado + "Request requisicao, " + nomeFluxoFormatado + "Response resposta) {\n" +
+			"\t\tLOGGER_TECNICO.info(\"Fluxo {} executado com sucesso.\", execucao.getNomeFluxo());\n" +
+			"\t\tthis.success.accept(resposta." + nomeMetodoGetter + "());\n" +
 			"\t}\n" +
 			"}\n";
 	}
@@ -580,16 +612,8 @@ public class automacao {
 			
 			System.out.println("Arquivo .java criado: " + arquivoJava.getAbsolutePath());
 
-			// Extrair fluxos únicos
-			List<String> fluxosUnicos = new ArrayList<>();
-			for (DadosMetodo metodo : listaMetodos) {
-				if (!fluxosUnicos.contains(metodo.nomeFluxoFormatado)) {
-					fluxosUnicos.add(metodo.nomeFluxoFormatado);
-				}
-			}
-			
-			// Gerar arquivos de fluxos
-			gerarFluxos(fluxosUnicos, geradosPath);
+			// Gerar arquivos de fluxos (passando a lista de métodos para mapear books de saída)
+			gerarFluxos(listaMetodos, geradosPath);
 			
 			// Compilar o arquivo .java para .class
 			JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
