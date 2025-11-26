@@ -166,6 +166,24 @@ public class ConectaGenerator {
 				}
 			}
 			
+			// Gerar constantes de fluxo para cada método
+			StringBuilder codigoConstantes = new StringBuilder();
+			Map<String, String> metodoParaConstante = new HashMap<>(); // Mapear nome do método para nome da constante
+			
+			for (DadosMetodo metodo : listaMetodos) {
+				// Gerar nome da constante: FLUXO_{NOME_METODO}_{NOME_CLASSE}
+				String nomeMetodoSnakeCase = camelCaseParaSnakeCase(metodo.nomeMetodo);
+				String nomeClasseSnakeCase = camelCaseParaSnakeCase(nomeClasseFormatado);
+				String nomeConstante = "FLUXO_" + nomeMetodoSnakeCase + "_" + nomeClasseSnakeCase;
+				String valorConstante = metodo.nomeFluxoFormatado.toUpperCase(); // Nome do fluxo em maiúsculo
+				
+				codigoConstantes.append("\tpublic static final String ").append(nomeConstante)
+					.append(" = \"").append(valorConstante).append("\";\n");
+				
+				// Armazenar mapeamento para usar no código do método
+				metodoParaConstante.put(metodo.nomeMetodo, nomeConstante);
+			}
+			
 			// Gerar código dos métodos
 			StringBuilder codigoMetodos = new StringBuilder();
 			StringBuilder codigoMetodosAuxiliares = new StringBuilder();
@@ -210,32 +228,36 @@ public class ConectaGenerator {
 				// Gerar código do método
 				codigoMetodos.append("\t@Override\n");
 				codigoMetodos.append("\tpublic ").append(tipoRetornoString).append(" ").append(metodo.nomeMetodo).append("(Proposta proposta) {\n");
-				codigoMetodos.append("\t\tLOGGER_TECNICO.info(\"Iniciando metodo ").append(metodo.nomeMetodo).append(" {}\", proposta);\n");
+				codigoMetodos.append("\t\tLOGGER_TECNICO.info(\"Iniciando metodo ").append(metodo.nomeMetodo).append("\");\n");
 				codigoMetodos.append("\t\t").append(metodo.nomeFluxoFormatado).append("Request req = new ").append(metodo.nomeFluxoFormatado).append("Request();\n");
 				codigoMetodos.append("\t\t").append(nomeBookEntradaRequest).append(" ").append(nomeBookEntradaRequestVar).append(" = PropostaConectaMapper.INSTANCE.toPcjwm2eRequest(proposta);\n");
 				codigoMetodos.append("\t\treq.set").append(capitalizar(nomeBookEntradaRequestVar)).append("(").append(nomeBookEntradaRequestVar).append(");\n");
 				codigoMetodos.append("\t\t\n");
 				codigoMetodos.append("\t\t").append(metodo.nomeFluxoFormatado).append("Response res = new ").append(metodo.nomeFluxoFormatado).append("Response();\n");
-				codigoMetodos.append("\t\tAtomicReference<").append(nomeBookSaidaResponse).append("> memory = new AtomicReference<>();\n");
-				codigoMetodos.append("\t\t\n");
-				codigoMetodos.append("\t\tLOGGER_TECNICO.info(\"Executando fluxo {} PADRAO\", FLUXO_ABRIR_PROPOSTA.toUpperCase());\n");
-				codigoMetodos.append("\t\tconectaClient.fluxo().executar(req, res,\n");
-				codigoMetodos.append("\t\t\t\tnew PccjiadlStatusHandler (").append(nomeBookSaidaResponseParam).append(" -> memory.set(pertence").append(capitalizar(nomeBookSaidaResponseParam)).append("(").append(nomeBookSaidaResponseParam).append("))));\n");
-				codigoMetodos.append("\t\t\t\t\n");
-				if (!retornoEhVoid) {
-					codigoMetodos.append("\t\t").append(nomeBookSaidaResposta).append(" ").append(nomeVariavelRetorno).append(" = null;\n");
-				}
-				codigoMetodos.append("\t\tif(Objects.nonNull(memory.get())){\n");
-				if (!retornoEhVoid) {
-					codigoMetodos.append("\t\t\t").append(nomeVariavelRetorno).append(" = (").append(nomeBookSaidaResposta).append(") memory.get();\n");
+				
+				// Obter nome da constante para este método
+				String nomeConstanteFluxo = metodoParaConstante.get(metodo.nomeMetodo);
+				
+				// Se for void, gera código simplificado sem AtomicReference e lambda
+				if (retornoEhVoid) {
+					codigoMetodos.append("\t\tLOGGER_TECNICO.info(\"Executando fluxo {} PADRAO\", ").append(nomeConstanteFluxo).append(".toUpperCase());\n");
+					codigoMetodos.append("\t\tconectaClient.fluxo().executar(req, res,\n");
+					codigoMetodos.append("\t\t\t\tnew ").append(metodo.nomeFluxoFormatado).append("StatusHandler());\n");
 				} else {
-					codigoMetodos.append("\t\t\tproposta.setNumeroProposta(Long.parseLong(memory.get().getCppstaCataoPJ()));\n");
+					// Para tipos 1 e 2, gera o código com AtomicReference e lambda
+					codigoMetodos.append("\t\tAtomicReference<").append(nomeBookSaidaResponse).append("> memory = new AtomicReference<>();\n");
+					codigoMetodos.append("\t\t\n");
+					codigoMetodos.append("\t\tLOGGER_TECNICO.info(\"Executando fluxo {} PADRAO\", ").append(nomeConstanteFluxo).append(".toUpperCase());\n");
+					codigoMetodos.append("\t\tconectaClient.fluxo().executar(req, res,\n");
+					codigoMetodos.append("\t\t\t\tnew ").append(metodo.nomeFluxoFormatado).append("StatusHandler (").append(nomeBookSaidaResponseParam).append(" -> memory.set(pertence").append(capitalizar(nomeBookSaidaResponseParam)).append("(").append(nomeBookSaidaResponseParam).append("))));\n");
+					codigoMetodos.append("\t\t\t\t\n");
+					codigoMetodos.append("\t\t").append(nomeBookSaidaResposta).append(" ").append(nomeVariavelRetorno).append(" = null;\n");
+					codigoMetodos.append("\t\tif(Objects.nonNull(memory.get())){\n");
+					codigoMetodos.append("\t\t\t").append(nomeVariavelRetorno).append(" = (").append(nomeBookSaidaResposta).append(") memory.get();\n");
+					codigoMetodos.append("\t\t}\n");
 				}
-				codigoMetodos.append("\t\t}\n");
 				codigoMetodos.append("\t\t\n");
-				codigoMetodos.append("\t\tLOGGER_TECNICO.info(\"Proposta Salva - CPF:\" + proposta.getCpf().getCPF()\n");
-				codigoMetodos.append("\t\t\t\t+ \" CNPJ: \" + proposta.getCnpj().getCNPJ()\n");
-				codigoMetodos.append("\t\t\t\t+ \" Proposta: \" + proposta.getNumeroProposta());\n");
+				codigoMetodos.append("\t\tLOGGER_TECNICO.info(\"Finalizando metodo " + metodo.nomeMetodo+"\");\t\n");
 				codigoMetodos.append(retornoFinal);
 				codigoMetodos.append("\t}\n\n");
 				
@@ -257,9 +279,7 @@ public class ConectaGenerator {
 				"@Component\n" +
 				"public class " + nomeClasseFormatado + "Conecta implements PropostaGateway {\n" +
 				"\tprivate static final Logger LOGGER_TECNICO = LoggerFactory.getLogger(" + nomeClasseFormatado + "Conecta.class);\n" +
-				"\tpublic static final String FLUXO_LISTA_PROPOSTA = \"PCCJIADP\";\n" +
-				"\tpublic static final String ELUXO_ABRIR_PROPOSTA = \"PCCJIADL\";\n" +
-				"\tpublic static final String FLUXO_ATUALIZA_SITUACAO_EVENTO = \"PCCJIADM\";\n" +
+				codigoConstantes.toString() +
 				"\tpublic static final String PADRAO = \"0\";\n" +
 				"\tpublic static final int TIPO_LISTA_PADRAO = 0;\n" +
 				"\tprivate final ConectaCLient conectaClient;\n" +
@@ -400,6 +420,30 @@ public class ConectaGenerator {
 			return str;
 		}
 		return str.substring(0, 1).toUpperCase() + (str.length() > 1 ? str.substring(1) : "");
+	}
+	
+	/**
+	 * Converte camelCase para SCREAMING_SNAKE_CASE.
+	 * Exemplo: "abrirProposta" -> "ABRIR_PROPOSTA"
+	 */
+	private static String camelCaseParaSnakeCase(String camelCase) {
+		if (camelCase == null || camelCase.isEmpty()) {
+			return camelCase;
+		}
+		
+		StringBuilder resultado = new StringBuilder();
+		for (int i = 0; i < camelCase.length(); i++) {
+			char c = camelCase.charAt(i);
+			if (Character.isUpperCase(c)) {
+				if (i > 0) {
+					resultado.append('_');
+				}
+				resultado.append(c);
+			} else {
+				resultado.append(Character.toUpperCase(c));
+			}
+		}
+		return resultado.toString();
 	}
 	
 	/**
