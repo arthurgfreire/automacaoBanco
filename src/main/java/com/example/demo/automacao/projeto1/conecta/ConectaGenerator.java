@@ -157,6 +157,9 @@ public class ConectaGenerator {
 					(nomeClasseHexagonal.length() > 1 ? nomeClasseHexagonal.substring(1) : "");
 			}
 			
+			// Nome do mapper: {NomeClasse}ConectaMapper
+			String nomeMapper = nomeClasseFormatado + "ConectaMapper";
+			
 			// Verificar se precisa importar List e Collections
 			boolean precisaList = false;
 			for (DadosMetodo metodo : listaMetodos) {
@@ -234,7 +237,7 @@ public class ConectaGenerator {
 				codigoMetodos.append("\tpublic ").append(tipoRetornoString).append(" ").append(metodo.nomeMetodo).append("(").append(nomeBookEntradaTipoEntrada).append(" entrada) {\n");
 				codigoMetodos.append("\t\tLOGGER_TECNICO.info(\"Iniciando metodo ").append(metodo.nomeMetodo).append("\");\n");
 				codigoMetodos.append("\t\t").append(metodo.nomeFluxoFormatado).append("Request req = new ").append(metodo.nomeFluxoFormatado).append("Request();\n");
-				codigoMetodos.append("\t\t").append(nomeBookEntradaRequest).append(" ").append(nomeBookEntradaRequestVar).append(" = PropostaConectaMapper.INSTANCE.").append(nomeMetodoMapper).append("(entrada);\n");
+				codigoMetodos.append("\t\t").append(nomeBookEntradaRequest).append(" ").append(nomeBookEntradaRequestVar).append(" = ").append(nomeMapper).append(".INSTANCE.").append(nomeMetodoMapper).append("(entrada);\n");
 				codigoMetodos.append("\t\treq.set").append(capitalizar(nomeBookEntradaRequestVar)).append("(").append(nomeBookEntradaRequestVar).append(");\n");
 				codigoMetodos.append("\t\t\n");
 				codigoMetodos.append("\t\t").append(metodo.nomeFluxoFormatado).append("Response res = new ").append(metodo.nomeFluxoFormatado).append("Response();\n");
@@ -304,6 +307,9 @@ public class ConectaGenerator {
 			
 			// Criar estrutura de pastas handler e mapper e suas classes
 			gerarHandlerEMapper(geradosPath);
+			
+			// Gerar o Mapper baseado no nome da classe e books usados
+			gerarMapper(geradosPath, nomeClasseFormatado, listaMetodos);
 
 			// Criar o arquivo .java
 			File arquivoJava = new File(geradosPath.toFile(), nomeClasseFormatado + "Conecta.java");
@@ -315,7 +321,8 @@ public class ConectaGenerator {
 				"import org.slf4j.Logger;\n" +
 				"import org.slf4j.LoggerFactory;\n" +
 				"import java.util.concurrent.atomic.AtomicReference;\n" +
-				"import java.util.Objects;\n";
+				"import java.util.Objects;\n" +
+				"import com.example.demo.automacao.projeto1.gerados.mapper." + nomeMapper + ";\n";
 			
 			// Adicionar imports de List e Collections se algum método retornar lista
 			if (precisaList) {
@@ -643,6 +650,128 @@ public class ConectaGenerator {
 			"\t\tsuper(message, cause);\n" +
 			"\t}\n" +
 			"}\n";
+	}
+	
+	/**
+	 * Gera o Mapper usando MapStruct na pasta mapper.
+	 */
+	private static void gerarMapper(Path geradosPath, String nomeClasseFormatado, List<DadosMetodo> listaMetodos) {
+		if (listaMetodos == null || listaMetodos.isEmpty()) {
+			return;
+		}
+		
+		try {
+			// Criar pasta mapper se não existir
+			Path mapperPath = geradosPath.resolve("mapper");
+			if (!Files.exists(mapperPath)) {
+				Files.createDirectories(mapperPath);
+				System.out.println("Pasta 'mapper' criada: " + mapperPath);
+			}
+			
+			// Nome do mapper: {NomeClasse}ConectaMapper
+			String nomeMapper = nomeClasseFormatado + "ConectaMapper";
+			
+			// Coletar books únicos de entrada e saída
+			Map<String, String> booksEntrada = new HashMap<>(); // Nome original -> Nome formatado
+			Map<String, String> booksSaida = new HashMap<>(); // Nome original -> Nome formatado
+			
+			for (DadosMetodo metodo : listaMetodos) {
+				if (metodo.nomeBookEntrada != null && !metodo.nomeBookEntrada.isEmpty()) {
+					String nomeBookEntradaRequest = aplicarCasePattern(1, metodo.nomeBookEntrada, "Request");
+					String nomeBookEntradaTipoEntrada = aplicarCasePattern(1, metodo.nomeBookEntrada, "Entrada");
+					booksEntrada.put(metodo.nomeBookEntrada, nomeBookEntradaRequest + "|" + nomeBookEntradaTipoEntrada);
+				}
+				if (metodo.nomeBookSaida != null && !metodo.nomeBookSaida.isEmpty()) {
+					String nomeBookSaidaResponse = aplicarCasePattern(1, metodo.nomeBookSaida, "Response");
+					booksSaida.put(metodo.nomeBookSaida, nomeBookSaidaResponse);
+				}
+			}
+			
+			// Gerar código do Mapper
+			String codigoMapper = gerarCodigoMapper(nomeMapper, booksEntrada, booksSaida);
+			
+			// Escrever arquivo do mapper
+			File arquivoMapper = new File(mapperPath.toFile(), nomeMapper + ".java");
+			try (FileWriter writer = new FileWriter(arquivoMapper)) {
+				writer.write(codigoMapper);
+			}
+			
+			System.out.println("Mapper criado: " + arquivoMapper.getAbsolutePath());
+			
+			// Compilar o mapper (opcional, pois o MapStruct gera a implementação em tempo de compilação)
+			JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+			if (compiler != null) {
+				String baseDir = System.getProperty("user.dir");
+				Path srcMainJavaPath = Paths.get(baseDir, "src", "main", "java");
+				String classpath = System.getProperty("java.class.path");
+				
+				int resultado = compiler.run(null, null, null,
+					"-cp", classpath,
+					"-d", srcMainJavaPath.toString(),
+					arquivoMapper.getAbsolutePath());
+				
+				if (resultado == 0) {
+					System.out.println("✓ Mapper compilado com sucesso!");
+				} else {
+					System.err.println("Aviso: Erro ao compilar o mapper (isso é normal se MapStruct não estiver configurado)");
+				}
+			}
+			
+		} catch (IOException e) {
+			System.err.println("Erro ao criar mapper: " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * Gera o código Java para a interface do Mapper usando MapStruct.
+	 */
+	private static String gerarCodigoMapper(String nomeMapper, Map<String, String> booksEntrada, Map<String, String> booksSaida) {
+		String packageName = "com.example.demo.automacao.projeto1.gerados.mapper";
+		
+		StringBuilder codigo = new StringBuilder();
+		codigo.append("package ").append(packageName).append(";\n\n");
+		codigo.append("import org.mapstruct.Mapper;\n");
+		codigo.append("import org.mapstruct.Mapping;\n");
+		codigo.append("import org.mapstruct.factory.Mappers;\n\n");
+		
+		codigo.append("@Mapper\n");
+		codigo.append("public interface ").append(nomeMapper).append(" {\n\n");
+		codigo.append("\t").append(nomeMapper).append(" INSTANCE = Mappers.getMapper(").append(nomeMapper).append(".class);\n\n");
+		
+		// Gerar métodos de mapeamento para cada book de entrada
+		for (Map.Entry<String, String> entry : booksEntrada.entrySet()) {
+			String nomeBookOriginal = entry.getKey();
+			String[] partes = entry.getValue().split("\\|");
+			if (partes.length >= 2) {
+				String nomeBookRequest = partes[0]; // PCCJWM2ERequest
+				String nomeTipoEntrada = partes[1]; // PCCJWM2EEntrada
+				String nomeMetodoMapper = "to" + capitalizar(nomeBookOriginal) + "Request";
+				
+				codigo.append("\t@Mapping(source = \"cpf.numero\", target = \"cpf\")\n");
+				codigo.append("\t@Mapping(source = \"cnpj.numero\", target = \"cnpj\")\n");
+				codigo.append("\t@Mapping(source = \"numeroProposta\", target = \"numeroProposta\")\n");
+				codigo.append("\t").append(nomeBookRequest).append(" ").append(nomeMetodoMapper).append("(").append(nomeTipoEntrada).append(" entrada);\n\n");
+			}
+		}
+		
+		// Gerar métodos de mapeamento reverso para cada book de saída
+		if (!booksEntrada.isEmpty() && !booksSaida.isEmpty()) {
+			String primeiraEntrada = booksEntrada.values().iterator().next().split("\\|")[1];
+			
+			for (Map.Entry<String, String> entry : booksSaida.entrySet()) {
+				String nomeBookResponse = entry.getValue(); // PCCJWM2SResponse
+				
+				codigo.append("\t@Mapping(source = \"cppstaCataoPj\", target = \"numeroProposta\")\n");
+				codigo.append("\t@Mapping(target = \"cpf\", ignore = true)\n");
+				codigo.append("\t@Mapping(target = \"cnpj\", ignore = true)\n");
+				codigo.append("\t").append(primeiraEntrada).append(" to").append(capitalizar(entry.getKey())).append("(").append(nomeBookResponse).append(" response);\n\n");
+			}
+		}
+		
+		codigo.append("}\n");
+		
+		return codigo.toString();
 	}
 	
 	/**
