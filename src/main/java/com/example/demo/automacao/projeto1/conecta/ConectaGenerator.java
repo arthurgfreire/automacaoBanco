@@ -192,6 +192,10 @@ public class ConectaGenerator {
 				// Preparar nomes dos books com Request/Response mantendo o padrão de case
 				String nomeBookEntradaRequest = metodo.nomeBookEntrada != null ? aplicarCasePattern(1, metodo.nomeBookEntrada, "Request") : "SEMBOOKDEENTRADARequest";
 				String nomeBookEntradaRequestVar = metodo.nomeBookEntrada != null ? aplicarCasePattern(2, metodo.nomeBookEntrada, "Request") : "sembookdeentradaRequest";
+				// Preparar nome do tipo de entrada: {NomeBookEntrada}Entrada
+				String nomeBookEntradaTipoEntrada = metodo.nomeBookEntrada != null ? aplicarCasePattern(1, metodo.nomeBookEntrada, "Entrada") : "SEMBOOKDEENTRADAEntrada";
+				// Preparar nome do método do mapper: to{NomeBookEntrada}Request
+				String nomeMetodoMapper = metodo.nomeBookEntrada != null ? "to" + capitalizar(metodo.nomeBookEntrada) + "Request" : "toSemBookDeEntradaRequest";
 				String nomeBookSaidaResponse = metodo.nomeBookSaida != null ? aplicarCasePattern(1, metodo.nomeBookSaida, "Response") : "SEMBOOKDESAIDAResponse";
 				String nomeBookSaidaResponseParam = metodo.nomeBookSaida != null ? aplicarCasePattern(2, metodo.nomeBookSaida, "") : "sembookdesaidaparam";
 				// Preparar nome do book de saída com "Resposta" para o tipo de retorno
@@ -227,10 +231,10 @@ public class ConectaGenerator {
 				
 				// Gerar código do método
 				codigoMetodos.append("\t@Override\n");
-				codigoMetodos.append("\tpublic ").append(tipoRetornoString).append(" ").append(metodo.nomeMetodo).append("(Proposta proposta) {\n");
+				codigoMetodos.append("\tpublic ").append(tipoRetornoString).append(" ").append(metodo.nomeMetodo).append("(").append(nomeBookEntradaTipoEntrada).append(" entrada) {\n");
 				codigoMetodos.append("\t\tLOGGER_TECNICO.info(\"Iniciando metodo ").append(metodo.nomeMetodo).append("\");\n");
 				codigoMetodos.append("\t\t").append(metodo.nomeFluxoFormatado).append("Request req = new ").append(metodo.nomeFluxoFormatado).append("Request();\n");
-				codigoMetodos.append("\t\t").append(nomeBookEntradaRequest).append(" ").append(nomeBookEntradaRequestVar).append(" = PropostaConectaMapper.INSTANCE.toPcjwm2eRequest(proposta);\n");
+				codigoMetodos.append("\t\t").append(nomeBookEntradaRequest).append(" ").append(nomeBookEntradaRequestVar).append(" = PropostaConectaMapper.INSTANCE.").append(nomeMetodoMapper).append("(entrada);\n");
 				codigoMetodos.append("\t\treq.set").append(capitalizar(nomeBookEntradaRequestVar)).append("(").append(nomeBookEntradaRequestVar).append(");\n");
 				codigoMetodos.append("\t\t\n");
 				codigoMetodos.append("\t\t").append(metodo.nomeFluxoFormatado).append("Response res = new ").append(metodo.nomeFluxoFormatado).append("Response();\n");
