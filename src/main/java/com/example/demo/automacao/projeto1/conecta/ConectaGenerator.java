@@ -203,6 +203,10 @@ public class ConectaGenerator {
 				String nomeBookSaidaResponseParam = metodo.nomeBookSaida != null ? aplicarCasePattern(2, metodo.nomeBookSaida, "") : "sembookdesaidaparam";
 				// Preparar nome do book de saída com "Resposta" para o tipo de retorno
 				String nomeBookSaidaResposta = metodo.nomeBookSaida != null ? aplicarCasePattern(1, metodo.nomeBookSaida, "Resposta") : "SEMBOOKDESAIDAResposta";
+				// Preparar nome da variável de resposta (tipo Response): {nomeBookSaida}Response
+				String nomeVariavelResponse = metodo.nomeBookSaida != null ? aplicarCasePattern(2, metodo.nomeBookSaida, "Response") : "sembookdesaidarResponse";
+				// Preparar nome do método do mapper reverso: to{NomeBookSaida}Resposta
+				String nomeMetodoMapperReverso = metodo.nomeBookSaida != null ? "to" + capitalizar(metodo.nomeBookSaida) + "Resposta" : "toSemBookDeSaidaResposta";
 				
 				// Definir tipo de retorno baseado na opção escolhida
 				String tipoRetornoString = "";
@@ -212,13 +216,15 @@ public class ConectaGenerator {
 				switch (metodo.tipoRetorno) {
 					case 1:
 						tipoRetornoString = nomeBookSaidaResposta;
-						nomeVariavelRetorno = aplicarCasePattern(2, metodo.nomeBookSaida != null ? metodo.nomeBookSaida : "sembookdesaida", "");
-						retornoFinal = "\t\treturn " + nomeVariavelRetorno + ";\n";
+						nomeVariavelRetorno = nomeVariavelResponse; // Usar o nome da variável Response
+						retornoFinal = "\t\treturn " + nomeMapper + ".INSTANCE." + nomeMetodoMapperReverso + "(" + nomeVariavelRetorno + ");\n";
 						break;
 					case 2:
 						tipoRetornoString = "List<" + nomeBookSaidaResposta + ">";
-						nomeVariavelRetorno = aplicarCasePattern(2, metodo.nomeBookSaida != null ? metodo.nomeBookSaida : "sembookdesaida", "");
-						retornoFinal = "\t\t// TODO: Retornar lista de " + nomeBookSaidaResposta.toLowerCase() + "\n\t\treturn Collections.emptyList();\n";
+						nomeVariavelRetorno = nomeVariavelResponse; // Usar o nome da variável Response
+						// Método do mapper para lista: to{NomeBookSaida}RespostaLista
+						String nomeMetodoMapperLista = metodo.nomeBookSaida != null ? "to" + capitalizar(metodo.nomeBookSaida) + "RespostaLista" : "toSemBookDeSaidaRespostaLista";
+						retornoFinal = "\t\treturn " + nomeMapper + ".INSTANCE." + nomeMetodoMapperLista + "(memory.get().getListaSaida());\n";
 						break;
 					case 3:
 						tipoRetornoString = "void";
@@ -258,13 +264,27 @@ public class ConectaGenerator {
 					codigoMetodos.append("\t\tconectaClient.fluxo().executar(req, res,\n");
 					codigoMetodos.append("\t\t\t\tnew ").append(metodo.nomeFluxoFormatado).append("StatusHandler (").append(nomeBookSaidaResponseParam).append(" -> memory.set(pertence").append(capitalizar(nomeBookSaidaResponseParam)).append("(").append(nomeBookSaidaResponseParam).append("))));\n");
 					codigoMetodos.append("\t\t\t\t\n");
-					codigoMetodos.append("\t\t").append(nomeBookSaidaResposta).append(" ").append(nomeVariavelRetorno).append(" = null;\n");
-					codigoMetodos.append("\t\tif(Objects.nonNull(memory.get())){\n");
-					codigoMetodos.append("\t\t\t").append(nomeVariavelRetorno).append(" = (").append(nomeBookSaidaResposta).append(") memory.get();\n");
-					codigoMetodos.append("\t\t}\n");
+					
+					// Para tipo 1 (objeto simples), declara a variável e atribui
+					if (metodo.tipoRetorno == 1) {
+						codigoMetodos.append("\t\t").append(nomeBookSaidaResponse).append(" ").append(nomeVariavelRetorno).append(" = null;\n");
+						codigoMetodos.append("\t\tif(Objects.nonNull(memory.get())){\n");
+						codigoMetodos.append("\t\t\t").append(nomeVariavelRetorno).append(" = memory.get();\n");
+						codigoMetodos.append("\t\t}\n");
+					}
+					// Para tipo 2 (lista), não declara variável aqui - será tratado no retorno
 				}
 				codigoMetodos.append("\t\t\n");
 				codigoMetodos.append("\t\tLOGGER_TECNICO.info(\"Finalizando metodo " + metodo.nomeMetodo+"\");\t\n");
+				
+				// Para tipo 2, adicionar lógica específica antes do return
+				if (metodo.tipoRetorno == 2) {
+					codigoMetodos.append("\t\tif(Objects.isNull(memory.get())){\n");
+					codigoMetodos.append("\t\t\treturn Collections.emptyList();\n");
+					codigoMetodos.append("\t\t}\n");
+					codigoMetodos.append("\t\t\n");
+				}
+				
 				codigoMetodos.append(retornoFinal);
 				codigoMetodos.append("\t}\n\n");
 				
@@ -272,7 +292,15 @@ public class ConectaGenerator {
 				if (metodo.nomeBookSaida != null && !metodo.nomeBookSaida.isEmpty()) {
 					codigoMetodosAuxiliares.append("\tprivate ").append(nomeBookSaidaResponse).append(" pertence").append(capitalizar(nomeBookSaidaResponseParam)).append("(final ").append(nomeBookSaidaResponse).append(" response) {\n");
 					codigoMetodosAuxiliares.append("\t\tif (Objects.nonNull(response)\n");
-					codigoMetodosAuxiliares.append("\t\t\t\t&& Objects.nonNull(response.getCppstaCataoPj())){\n");
+					
+					// Para tipo lista (2), verifica se a lista não está vazia
+					if (metodo.tipoRetorno == 2) {
+						codigoMetodosAuxiliares.append("\t\t\t\t&& !response.getListaSaida().isEmpty()){\n");
+					} else {
+						// Para tipo 1, verifica o campo antigo
+						codigoMetodosAuxiliares.append("\t\t\t\t&& Objects.nonNull(response.getCppstaCataoPj())){\n");
+					}
+					
 					codigoMetodosAuxiliares.append("\t\t\treturn response;\n");
 					codigoMetodosAuxiliares.append("\t\t}\n");
 					codigoMetodosAuxiliares.append("\t\treturn null;\n");
