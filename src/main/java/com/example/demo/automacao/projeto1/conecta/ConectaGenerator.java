@@ -701,7 +701,7 @@ public class ConectaGenerator {
 			
 			// Coletar books únicos de entrada e saída
 			Map<String, String> booksEntrada = new HashMap<>(); // Nome original -> Nome formatado
-			Map<String, String> booksSaida = new HashMap<>(); // Nome original -> Nome formatado
+			Map<String, Integer> booksSaida = new HashMap<>(); // Nome original -> Tipo retorno (1=objeto, 2=lista)
 			
 			for (DadosMetodo metodo : listaMetodos) {
 				if (metodo.nomeBookEntrada != null && !metodo.nomeBookEntrada.isEmpty()) {
@@ -710,8 +710,8 @@ public class ConectaGenerator {
 					booksEntrada.put(metodo.nomeBookEntrada, nomeBookEntradaRequest + "|" + nomeBookEntradaTipoEntrada);
 				}
 				if (metodo.nomeBookSaida != null && !metodo.nomeBookSaida.isEmpty()) {
-					String nomeBookSaidaResponse = aplicarCasePattern(1, metodo.nomeBookSaida, "Response");
-					booksSaida.put(metodo.nomeBookSaida, nomeBookSaidaResponse);
+					// Armazenar o tipo de retorno para saber se é lista ou objeto simples
+					booksSaida.put(metodo.nomeBookSaida, metodo.tipoRetorno);
 				}
 			}
 			
@@ -754,14 +754,15 @@ public class ConectaGenerator {
 	/**
 	 * Gera o código Java para a interface do Mapper usando MapStruct.
 	 */
-	private static String gerarCodigoMapper(String nomeMapper, Map<String, String> booksEntrada, Map<String, String> booksSaida) {
+	private static String gerarCodigoMapper(String nomeMapper, Map<String, String> booksEntrada, Map<String, Integer> booksSaida) {
 		String packageName = "com.example.demo.automacao.projeto1.gerados.mapper";
 		
 		StringBuilder codigo = new StringBuilder();
 		codigo.append("package ").append(packageName).append(";\n\n");
 		codigo.append("import org.mapstruct.Mapper;\n");
 		codigo.append("import org.mapstruct.Mapping;\n");
-		codigo.append("import org.mapstruct.factory.Mappers;\n\n");
+		codigo.append("import org.mapstruct.factory.Mappers;\n");
+		codigo.append("import java.util.List;\n\n");
 		
 		codigo.append("@Mapper\n");
 		codigo.append("public interface ").append(nomeMapper).append(" {\n\n");
@@ -783,17 +784,37 @@ public class ConectaGenerator {
 			}
 		}
 		
-		// Gerar métodos de mapeamento reverso para cada book de saída
-		if (!booksEntrada.isEmpty() && !booksSaida.isEmpty()) {
-			String primeiraEntrada = booksEntrada.values().iterator().next().split("\\|")[1];
-			
-			for (Map.Entry<String, String> entry : booksSaida.entrySet()) {
-				String nomeBookResponse = entry.getValue(); // PCCJWM2SResponse
+		// Gerar métodos de mapeamento de saída para cada book de saída
+		// Primeiro, gerar métodos de elemento (objeto simples) para todos os books de saída
+		Map<String, String> booksSaidaProcessados = new HashMap<>(); // Para evitar duplicatas
+		for (Map.Entry<String, Integer> entry : booksSaida.entrySet()) {
+			String nomeBookOriginal = entry.getKey();
+			if (!booksSaidaProcessados.containsKey(nomeBookOriginal)) {
+				String nomeBookSaidaResponse = aplicarCasePattern(1, nomeBookOriginal, "Response"); // PCCJWM2SResponse
+				String nomeBookSaidaResposta = aplicarCasePattern(1, nomeBookOriginal, "Resposta"); // PCCJWM2SResposta
+				String nomeMetodoResposta = "to" + capitalizar(nomeBookOriginal) + "Resposta";
 				
+				// Sempre gerar método de elemento (objeto simples)
 				codigo.append("\t@Mapping(source = \"cppstaCataoPj\", target = \"numeroProposta\")\n");
 				codigo.append("\t@Mapping(target = \"cpf\", ignore = true)\n");
 				codigo.append("\t@Mapping(target = \"cnpj\", ignore = true)\n");
-				codigo.append("\t").append(primeiraEntrada).append(" to").append(capitalizar(entry.getKey())).append("(").append(nomeBookResponse).append(" response);\n\n");
+				codigo.append("\t").append(nomeBookSaidaResposta).append(" ").append(nomeMetodoResposta).append("(").append(nomeBookSaidaResponse).append(" response);\n\n");
+				
+				booksSaidaProcessados.put(nomeBookOriginal, nomeBookSaidaResposta);
+			}
+		}
+		
+		// Depois, gerar métodos de lista apenas para books de saída usados em tipo 2 (lista)
+		for (Map.Entry<String, Integer> entry : booksSaida.entrySet()) {
+			Integer tipoRetorno = entry.getValue();
+			if (tipoRetorno == 2) {
+				String nomeBookOriginal = entry.getKey();
+				String nomeBookSaidaResponse = aplicarCasePattern(1, nomeBookOriginal, "Response"); // PCCJWM2SResponse
+				String nomeBookSaidaResposta = aplicarCasePattern(1, nomeBookOriginal, "Resposta"); // PCCJWM2SResposta
+				String nomeMetodoRespostaLista = "to" + capitalizar(nomeBookOriginal) + "RespostaLista";
+				
+				// Mapeamento para lista: toPCCJWM2SRespostaLista
+				codigo.append("\tList<").append(nomeBookSaidaResposta).append("> ").append(nomeMetodoRespostaLista).append("(List<").append(nomeBookSaidaResponse).append("> lista);\n\n");
 			}
 		}
 		
