@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Configuração coletada para a opção "Entre microserviços" (feign).
+ * Configuração coletada para a opção Feign.
  */
 public class FeignConfig {
 

@@ -2,7 +2,7 @@ package com.example.demo.automacao.projeto1;
 
 import com.example.demo.automacao.projeto1.conecta.ConectaConfig;
 import com.example.demo.automacao.projeto1.conecta.ConectaGenerator;
-import com.example.demo.automacao.projeto1.microservicos.MicroservicosGenerator;
+import com.example.demo.automacao.projeto1.feign.FeignGenerator;
 import com.example.demo.automacao.projeto1.mensageria.MensageriaGenerator;
 import com.example.demo.automacao.projeto1.bancodedados.BancoDeDadosGenerator;
 import com.example.demo.automacao.projeto1.context.AdapterContext;
@@ -37,7 +37,7 @@ public class automacao {
 					return;
 
 				case 1:
-					MicroservicosGenerator.coletar(scanner, contexto);
+					FeignGenerator.coletar(scanner, contexto);
 					break;
 
 				case 2:
@@ -64,7 +64,7 @@ public class automacao {
 
 	private static void mostrarMenuInicial() {
 		System.out.println("\nEscolha o tipo de código a ser gerado:");
-		System.out.println("1 - Entre microserviços");
+		System.out.println("1 - Feign");
 		System.out.println("2 - Conecta");
 		System.out.println("3 - Mensageria");
 		System.out.println("4 - Banco de dados");
