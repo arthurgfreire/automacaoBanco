@@ -16,6 +16,9 @@ import java.util.Scanner;
 
 public class ConectaGenerator {
 	
+	/** Pacote base para arquivos gerados pela opção Conecta: gerados/output/conecta */
+	private static final String PACKAGE_BASE_CONECTA = "com.example.demo.automacao.projeto1.gerados.output.conecta";
+	
 	/**
 	 * Classe interna para armazenar os dados de cada método.
 	 */
@@ -323,14 +326,21 @@ public class ConectaGenerator {
 				codigoMetodosAuxiliares.toString() +
 				"}";
 
-			// Caminho para a pasta gerados
+			// Caminho: gerados/output/conecta (dentro de src/main/java)
 			String baseDir = System.getProperty("user.dir");
-			Path geradosPath = Paths.get(baseDir, "src", "main", "java", "com", "example", "demo", "automacao", "projeto1", "gerados");
+			Path geradosBasePath = Paths.get(baseDir, "src", "main", "java", "com", "example", "demo", "automacao", "projeto1", "gerados");
+			Path outputPath = geradosBasePath.resolve("output");
+			Path conectaPath = outputPath.resolve("conecta");
+			Path geradosPath = conectaPath;
 			
-			// Criar a pasta gerados se não existir
-			if (!Files.exists(geradosPath)) {
-				Files.createDirectories(geradosPath);
-				System.out.println("Pasta 'gerados' criada: " + geradosPath);
+			// Criar estrutura: gerados/output/conecta
+			if (!Files.exists(outputPath)) {
+				Files.createDirectories(outputPath);
+				System.out.println("Pasta 'output' criada: " + outputPath);
+			}
+			if (!Files.exists(conectaPath)) {
+				Files.createDirectories(conectaPath);
+				System.out.println("Pasta 'output/conecta' criada: " + conectaPath);
 			}
 			
 			// Criar estrutura de pastas handler e mapper e suas classes
@@ -343,14 +353,14 @@ public class ConectaGenerator {
 			File arquivoJava = new File(geradosPath.toFile(), nomeClasseFormatado + "Conecta.java");
 			
 			// Adicionar package e imports necessários ao código
-			String imports = "package com.example.demo.automacao.projeto1.gerados;\n\n" +
+			String imports = "package " + PACKAGE_BASE_CONECTA + ";\n\n" +
 				"import lombok.RequiredArgsConstructor;\n" +
 				"import org.springframework.stereotype.Component;\n" +
 				"import org.slf4j.Logger;\n" +
 				"import org.slf4j.LoggerFactory;\n" +
 				"import java.util.concurrent.atomic.AtomicReference;\n" +
 				"import java.util.Objects;\n" +
-				"import com.example.demo.automacao.projeto1.gerados.mapper." + nomeMapper + ";\n";
+				"import " + PACKAGE_BASE_CONECTA + ".mapper." + nomeMapper + ";\n";
 			
 			// Adicionar imports de List e Collections se algum método retornar lista
 			if (precisaList) {
@@ -629,7 +639,7 @@ public class ConectaGenerator {
 	 * Gera o código Java para a classe BcaqStatusHandler.
 	 */
 	private static String gerarCodigoBcaqStatusHandler() {
-		return "package com.example.demo.automacao.projeto1.gerados.handler;\n\n" +
+		return "package " + PACKAGE_BASE_CONECTA + ".handler;\n\n" +
 			"public abstract class BcaqStatusHandler<REQ, RES> {\n" +
 			"\t// Classe base para handlers de status\n" +
 			"}\n";
@@ -639,7 +649,7 @@ public class ConectaGenerator {
 	 * Gera o código Java para a classe BcaqBusinessException.
 	 */
 	private static String gerarCodigoBcaqBusinessException() {
-		return "package com.example.demo.automacao.projeto1.gerados.handler.exception;\n\n" +
+		return "package " + PACKAGE_BASE_CONECTA + ".handler.exception;\n\n" +
 			"public class BcaqBusinessException extends Exception {\n" +
 			"\tpublic BcaqBusinessException(String message) {\n" +
 			"\t\tsuper(message);\n" +
@@ -654,7 +664,7 @@ public class ConectaGenerator {
 	 * Gera o código Java para a classe BcaqFalhaSistemicaException.
 	 */
 	private static String gerarCodigoBcaqFalhaSistemicaException() {
-		return "package com.example.demo.automacao.projeto1.gerados.handler.exception;\n\n" +
+		return "package " + PACKAGE_BASE_CONECTA + ".handler.exception;\n\n" +
 			"public class BcaqFalhaSistemicaException extends Exception {\n" +
 			"\tpublic BcaqFalhaSistemicaException(String message) {\n" +
 			"\t\tsuper(message);\n" +
@@ -669,7 +679,7 @@ public class ConectaGenerator {
 	 * Gera o código Java para a classe BcaqSessaoMainframeExpiradaException.
 	 */
 	private static String gerarCodigoBcaqSessaoMainframeExpiradaException() {
-		return "package com.example.demo.automacao.projeto1.gerados.handler.exception;\n\n" +
+		return "package " + PACKAGE_BASE_CONECTA + ".handler.exception;\n\n" +
 			"public class BcaqSessaoMainframeExpiradaException extends Exception {\n" +
 			"\tpublic BcaqSessaoMainframeExpiradaException(String message) {\n" +
 			"\t\tsuper(message);\n" +
@@ -755,7 +765,7 @@ public class ConectaGenerator {
 	 * Gera o código Java para a interface do Mapper usando MapStruct.
 	 */
 	private static String gerarCodigoMapper(String nomeMapper, Map<String, String> booksEntrada, Map<String, Integer> booksSaida) {
-		String packageName = "com.example.demo.automacao.projeto1.gerados.mapper";
+		String packageName = PACKAGE_BASE_CONECTA + ".mapper";
 		
 		StringBuilder codigo = new StringBuilder();
 		codigo.append("package ").append(packageName).append(";\n\n");
@@ -992,7 +1002,7 @@ public class ConectaGenerator {
 	 * Gera o código Java para a classe Request do fluxo.
 	 */
 	private static String gerarCodigoRequest(String nomeFluxoFormatado, String nomeFluxoMinusculo) {
-		String packageName = "com.example.demo.automacao.projeto1.gerados.fluxos." + nomeFluxoMinusculo;
+		String packageName = PACKAGE_BASE_CONECTA + ".fluxos." + nomeFluxoMinusculo;
 		
 		return "package " + packageName + ";\n\n" +
 			"public class " + nomeFluxoFormatado + "Request {\n" +
@@ -1004,7 +1014,7 @@ public class ConectaGenerator {
 	 * Gera o código Java para a classe Response do fluxo.
 	 */
 	private static String gerarCodigoResponse(String nomeFluxoFormatado, String nomeFluxoMinusculo) {
-		String packageName = "com.example.demo.automacao.projeto1.gerados.fluxos." + nomeFluxoMinusculo;
+		String packageName = PACKAGE_BASE_CONECTA + ".fluxos." + nomeFluxoMinusculo;
 		
 		return "package " + packageName + ";\n\n" +
 			"public class " + nomeFluxoFormatado + "Response {\n" +
@@ -1016,7 +1026,7 @@ public class ConectaGenerator {
 	 * Gera o código Java para a classe Request do book de entrada.
 	 */
 	private static String gerarCodigoBookRequest(String nomeBookRequest, String nomeFluxoMinusculo) {
-		String packageName = "com.example.demo.automacao.projeto1.gerados.fluxos." + nomeFluxoMinusculo + ".book";
+		String packageName = PACKAGE_BASE_CONECTA + ".fluxos." + nomeFluxoMinusculo + ".book";
 		
 		return "package " + packageName + ";\n\n" +
 			"public class " + nomeBookRequest + " {\n" +
@@ -1028,7 +1038,7 @@ public class ConectaGenerator {
 	 * Gera o código Java para a classe Response do book de saída.
 	 */
 	private static String gerarCodigoBookResponse(String nomeBookResponse, String nomeFluxoMinusculo) {
-		String packageName = "com.example.demo.automacao.projeto1.gerados.fluxos." + nomeFluxoMinusculo + ".book";
+		String packageName = PACKAGE_BASE_CONECTA + ".fluxos." + nomeFluxoMinusculo + ".book";
 		
 		return "package " + packageName + ";\n\n" +
 			"public class " + nomeBookResponse + " {\n" +
@@ -1040,7 +1050,7 @@ public class ConectaGenerator {
 	 * Gera o código Java para a classe StatusHandler do fluxo.
 	 */
 	private static String gerarCodigoStatusHandler(String nomeFluxoFormatado, String nomeFluxoMinusculo, String nomeBookSaida) {
-		String packageName = "com.example.demo.automacao.projeto1.gerados.fluxos." + nomeFluxoMinusculo + ".handler";
+		String packageName = PACKAGE_BASE_CONECTA + ".fluxos." + nomeFluxoMinusculo + ".handler";
 		
 		// Preparar nomes do book de saída
 		String nomeBookSaidaResponse = nomeBookSaida != null ? aplicarCasePattern(1, nomeBookSaida, "Response") : "SEMBOOKDESAIDAResponse";
@@ -1053,9 +1063,9 @@ public class ConectaGenerator {
 			"import org.slf4j.Logger;\n" +
 			"import org.slf4j.LoggerFactory;\n" +
 			"import java.util.function.Consumer;\n" +
-			"import com.example.demo.automacao.projeto1.gerados.handler.BcaqStatusHandler;\n" +
-			"import com.example.demo.automacao.projeto1.gerados.fluxos." + nomeFluxoMinusculo + "." + nomeFluxoFormatado + "Request;\n" +
-			"import com.example.demo.automacao.projeto1.gerados.fluxos." + nomeFluxoMinusculo + "." + nomeFluxoFormatado + "Response;\n\n" +
+			"import " + PACKAGE_BASE_CONECTA + ".handler.BcaqStatusHandler;\n" +
+			"import " + PACKAGE_BASE_CONECTA + ".fluxos." + nomeFluxoMinusculo + "." + nomeFluxoFormatado + "Request;\n" +
+			"import " + PACKAGE_BASE_CONECTA + ".fluxos." + nomeFluxoMinusculo + "." + nomeFluxoFormatado + "Response;\n\n" +
 			"@RequiredArgsConstructor\n" +
 			"public class " + nomeFluxoFormatado + "StatusHandler extends BcaqStatusHandler<" + nomeFluxoFormatado + "Request, " + nomeFluxoFormatado + "Response>\n" +
 			"\t\timplements FrwkExecucaoStatusHandler<" + nomeFluxoFormatado + "Request, " + nomeFluxoFormatado + "Response> {\n\n" +
