@@ -18,54 +18,39 @@ public class ConectaGenerator {
 	
 	/** Pacote base para arquivos gerados pela opção Conecta: gerados/output/conecta */
 	private static final String PACKAGE_BASE_CONECTA = "com.example.demo.automacao.projeto1.gerados.output.conecta";
-	
-	/**
-	 * Classe interna para armazenar os dados de cada método.
-	 */
-	private static class DadosMetodo {
-		String nomeMetodo;
-		int tipoRetorno;
-		String nomeFluxoFormatado;
-		String nomeBookEntrada;
-		String nomeBookSaida;
-		
-		DadosMetodo(String nomeMetodo, int tipoRetorno, String nomeFluxoFormatado,
-				String nomeBookEntrada, String nomeBookSaida) {
-			this.nomeMetodo = nomeMetodo;
-			this.tipoRetorno = tipoRetorno;
-			this.nomeFluxoFormatado = nomeFluxoFormatado;
-			this.nomeBookEntrada = nomeBookEntrada;
-			this.nomeBookSaida = nomeBookSaida;
-		}
-	}
 
-	public static void executar(Scanner scanner) {
+	/**
+	 * Coleta dados do usuário (configuração de classe e métodos).
+	 * NÃO gera código. Ao digitar 0 no submenu de método, retorna a config e volta ao menu inicial.
+	 * @return ConectaConfig com os dados coletados, ou null se o usuário saiu sem adicionar métodos
+	 */
+	public static ConectaConfig coletar(Scanner scanner) {
 		// Perguntar o nome da classe para criar o arquivo Hexagonal
 		System.out.println("\n=== CONFIGURAÇÃO DA CLASSE ===");
 		System.out.print("Nome da classe para criar o arquivo Hexagonal: ");
 		String nomeClasseHexagonal = scanner.nextLine().trim();
 		if (nomeClasseHexagonal == null || nomeClasseHexagonal.isEmpty()) {
-			System.err.println("Nome da classe é obrigatório. Encerrando...");
-			return;
+			System.out.println("Nome da classe é obrigatório. Voltando ao menu inicial.");
+			return null;
 		}
 		
 		// Lista para armazenar os métodos
-		List<DadosMetodo> listaMetodos = new ArrayList<>();
+		List<ConectaConfig.DadosMetodo> listaMetodos = new ArrayList<>();
 		
-		// Loop para criar múltiplos métodos
+		// Loop para criar múltiplos métodos - 0 volta ao menu inicial (não gera)
 		while (true) {
 			System.out.println("\n=== CONFIGURAÇÃO DO MÉTODO ===");
-			System.out.println("Digite '0' para finalizar e gerar a classe");
+			System.out.println("Digite '0' para voltar ao menu inicial");
 			System.out.print("Qual o nome do metodo para ser criado? ");
 			String nomeMetodo = scanner.nextLine().trim();
 			
-			// Verificar se deseja finalizar
+			// Verificar se deseja voltar ao menu inicial
 			if (nomeMetodo.equals("0")) {
 				if (listaMetodos.isEmpty()) {
-					System.err.println("Nenhum método foi criado. Encerrando...");
-					return;
+					System.out.println("Voltando ao menu inicial (nenhum método adicionado).");
+					return null;
 				}
-				break; // Finaliza o loop e gera a classe
+				return new ConectaConfig(nomeClasseHexagonal, listaMetodos);
 			}
 			
 			if (nomeMetodo == null || nomeMetodo.isEmpty()) {
@@ -148,10 +133,19 @@ public class ConectaGenerator {
 			}
 			
 			// Adicionar método à lista
-			listaMetodos.add(new DadosMetodo(nomeMetodo, tipoRetorno, nomeFluxoFormatado, nomeBookEntrada, nomeBookSaida));
+			listaMetodos.add(new ConectaConfig.DadosMetodo(nomeMetodo, tipoRetorno, nomeFluxoFormatado, nomeBookEntrada, nomeBookSaida));
 			System.out.println("\n✓ Método '" + nomeMetodo + "' adicionado com sucesso!");
 		}
-	
+	}
+
+	/**
+	 * Gera o código (arquivos .java e compilação) a partir da configuração coletada.
+	 * Chamado apenas quando o usuário digita 0 no menu inicial (Gerar Adapter).
+	 */
+	public static void gerar(ConectaConfig config) {
+		String nomeClasseHexagonal = config.nomeClasseHexagonal;
+		List<ConectaConfig.DadosMetodo> listaMetodos = config.listaMetodos;
+		
 		try {
 			// Normalizar o nome da classe (primeira letra maiúscula, resto mantém o padrão do usuário)
 			String nomeClasseFormatado = "";
@@ -165,7 +159,7 @@ public class ConectaGenerator {
 			
 			// Verificar se precisa importar List e Collections
 			boolean precisaList = false;
-			for (DadosMetodo metodo : listaMetodos) {
+			for (ConectaConfig.DadosMetodo metodo : listaMetodos) {
 				if (metodo.tipoRetorno == 2) {
 					precisaList = true;
 					break;
@@ -176,7 +170,7 @@ public class ConectaGenerator {
 			StringBuilder codigoConstantes = new StringBuilder();
 			Map<String, String> metodoParaConstante = new HashMap<>(); // Mapear nome do método para nome da constante
 			
-			for (DadosMetodo metodo : listaMetodos) {
+			for (ConectaConfig.DadosMetodo metodo : listaMetodos) {
 				// Gerar nome da constante: FLUXO_{NOME_METODO}_{NOME_CLASSE}
 				String nomeMetodoSnakeCase = camelCaseParaSnakeCase(metodo.nomeMetodo);
 				String nomeClasseSnakeCase = camelCaseParaSnakeCase(nomeClasseFormatado);
@@ -194,7 +188,7 @@ public class ConectaGenerator {
 			StringBuilder codigoMetodos = new StringBuilder();
 			StringBuilder codigoMetodosAuxiliares = new StringBuilder();
 			
-			for (DadosMetodo metodo : listaMetodos) {
+			for (ConectaConfig.DadosMetodo metodo : listaMetodos) {
 				// Preparar nomes dos books com Request/Response mantendo o padrão de case
 				String nomeBookEntradaRequest = metodo.nomeBookEntrada != null ? aplicarCasePattern(1, metodo.nomeBookEntrada, "Request") : "SEMBOOKDEENTRADARequest";
 				String nomeBookEntradaRequestVar = metodo.nomeBookEntrada != null ? aplicarCasePattern(2, metodo.nomeBookEntrada, "Request") : "sembookdeentradaRequest";
@@ -693,7 +687,7 @@ public class ConectaGenerator {
 	/**
 	 * Gera o Mapper usando MapStruct na pasta mapper.
 	 */
-	private static void gerarMapper(Path geradosPath, String nomeClasseFormatado, List<DadosMetodo> listaMetodos) {
+	private static void gerarMapper(Path geradosPath, String nomeClasseFormatado, List<ConectaConfig.DadosMetodo> listaMetodos) {
 		if (listaMetodos == null || listaMetodos.isEmpty()) {
 			return;
 		}
@@ -713,7 +707,7 @@ public class ConectaGenerator {
 			Map<String, String> booksEntrada = new HashMap<>(); // Nome original -> Nome formatado
 			Map<String, Integer> booksSaida = new HashMap<>(); // Nome original -> Tipo retorno (1=objeto, 2=lista)
 			
-			for (DadosMetodo metodo : listaMetodos) {
+			for (ConectaConfig.DadosMetodo metodo : listaMetodos) {
 				if (metodo.nomeBookEntrada != null && !metodo.nomeBookEntrada.isEmpty()) {
 					String nomeBookEntradaRequest = aplicarCasePattern(1, metodo.nomeBookEntrada, "Request");
 					String nomeBookEntradaTipoEntrada = aplicarCasePattern(1, metodo.nomeBookEntrada, "Entrada");
@@ -836,7 +830,7 @@ public class ConectaGenerator {
 	/**
 	 * Gera os arquivos de fluxos (Request, Response, StatusHandler) para cada fluxo único.
 	 */
-	private static void gerarFluxos(List<DadosMetodo> listaMetodos, Path geradosPath) {
+	private static void gerarFluxos(List<ConectaConfig.DadosMetodo> listaMetodos, Path geradosPath) {
 		if (listaMetodos == null || listaMetodos.isEmpty()) {
 			return;
 		}
@@ -844,7 +838,7 @@ public class ConectaGenerator {
 		// Extrair fluxos únicos e mapear aos books de entrada e saída
 		Map<String, String> fluxoParaBookSaida = new HashMap<>();
 		Map<String, String> fluxoParaBookEntrada = new HashMap<>();
-		for (DadosMetodo metodo : listaMetodos) {
+		for (ConectaConfig.DadosMetodo metodo : listaMetodos) {
 			if (metodo.nomeBookSaida != null && !metodo.nomeBookSaida.isEmpty()) {
 				fluxoParaBookSaida.put(metodo.nomeFluxoFormatado, metodo.nomeBookSaida);
 			}
@@ -871,7 +865,7 @@ public class ConectaGenerator {
 			
 			// Extrair fluxos únicos
 			List<String> fluxosUnicos = new ArrayList<>();
-			for (DadosMetodo metodo : listaMetodos) {
+			for (ConectaConfig.DadosMetodo metodo : listaMetodos) {
 				if (!fluxosUnicos.contains(metodo.nomeFluxoFormatado)) {
 					fluxosUnicos.add(metodo.nomeFluxoFormatado);
 				}

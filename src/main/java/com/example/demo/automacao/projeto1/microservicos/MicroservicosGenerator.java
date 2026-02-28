@@ -1,5 +1,7 @@
 package com.example.demo.automacao.projeto1.microservicos;
 
+import com.example.demo.automacao.projeto1.context.AdapterContext;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -8,13 +10,17 @@ import java.util.Scanner;
 public class MicroservicosGenerator {
 	
 	/**
-	 * Diretório base de saída para a opção "Entre microserviços".
+	 * Diretório base de saída para a opção "Entre microserviços" (feign).
 	 * Todo conteúdo gerado deve ser criado dentro de gerados/output/feign/.
 	 */
 	public static final Path BASE_OUTPUT_DIR_FEIGN = Paths.get(
 		System.getProperty("user.dir"), "src", "main", "java", "com", "example", "demo", "automacao", "projeto1", "gerados", "output", "feign");
-	
-	public static void executar(Scanner scanner) {
+
+	/**
+	 * Coleta dados para a opção "Entre microserviços".
+	 * NÃO gera código. Adiciona à lista feignConfigs do contexto.
+	 */
+	public static void coletar(Scanner scanner, AdapterContext contexto) {
 		System.out.println("\n=== GERAÇÃO DE CÓDIGO - ENTRE MICROSERVIÇOS ===");
 		
 		// Garantir estrutura gerados/output/feign
@@ -35,8 +41,7 @@ public class MicroservicosGenerator {
 		}
 		
 		System.out.println("Funcionalidade ainda não implementada.");
-		// TODO: Implementar geração de código para entre microserviços
-		// Usar BASE_OUTPUT_DIR_FEIGN como raiz para todo conteúdo gerado
+		// TODO: Implementar coleta de configuração e adicionar a contexto.feignConfigs
 	}
 }
 
