@@ -209,6 +209,8 @@ public class FeignGenerator {
 			FeignMethodConfig method = new FeignMethodConfig();
 			method.methodName = methodName;
 
+			method.pathComunicacao = readNonEmpty(scanner, "Path de comunicação (ex: v1/proposta ou v1/{numeroProposta}/produto):").trim();
+
 			System.out.println("Método HTTP:");
 			System.out.println("(1) GET");
 			System.out.println("(2) POST");
@@ -242,7 +244,7 @@ public class FeignGenerator {
 			// Mini resumo do método
 			System.out.println("\n✓ Método adicionado:");
 			String retInfo = method.returnDtoPath != null ? method.returnDtoPath : method.returnType.toString();
-			System.out.println(method.methodName + " | " + method.httpMethod + " | retorno: " + method.returnType + " | dto: " + retInfo);
+			System.out.println(method.methodName + " | " + method.pathComunicacao + " | " + method.httpMethod + " | retorno: " + method.returnType + " | dto: " + retInfo);
 			System.out.println("params: " + method.parameters.size() + " | CB=" + method.circuitBreaker + " | Retry=" + method.retry + " | Fallback=" + method.fallback);
 			System.out.println();
 
@@ -253,7 +255,7 @@ public class FeignGenerator {
 		System.out.println("Métodos: " + iface.methods.size());
 		for (FeignMethodConfig m : iface.methods) {
 			String dto = m.returnDtoPath != null ? m.returnDtoPath : m.returnType.toString();
-			System.out.println(m.methodName + " " + m.httpMethod + " | retorno=" + m.returnType + " " + dto + " | params=" + m.parameters.size()
+			System.out.println(m.methodName + " " + m.pathComunicacao + " " + m.httpMethod + " | retorno=" + m.returnType + " " + dto + " | params=" + m.parameters.size()
 				+ " | CB=" + m.circuitBreaker + " Retry=" + m.retry + " Fallback=" + m.fallback);
 		}
 		printDivider();
@@ -324,7 +326,7 @@ public class FeignGenerator {
 		for (FeignInterfaceConfig i : config.interfaces) {
 			System.out.println("  Interface: " + i.interfaceName + " | URL: " + i.baseUrl);
 			for (FeignMethodConfig m : i.methods) {
-				System.out.println("    Método: " + m.methodName + " " + m.httpMethod + " | " + m.returnType + " | params=" + m.parameters.size());
+				System.out.println("    Método: " + m.methodName + " " + m.pathComunicacao + " " + m.httpMethod + " | " + m.returnType + " | params=" + m.parameters.size());
 			}
 		}
 	}

@@ -12,6 +12,8 @@ import java.util.List;
 public class FeignMethodConfig {
 
 	public String methodName;
+	/** Caminho da requisição (path relativo), ex: v1/proposta ou v1/{numeroProposta}/produto */
+	public String pathComunicacao;
 	public HttpMethod httpMethod;
 	public ReturnType returnType;
 	/** Obrigatório quando returnType é SINGLE ou LIST */
