@@ -5,6 +5,7 @@ import com.example.demo.automacao.projeto1.context.FeignConfig;
 import com.example.demo.automacao.projeto1.context.FeignInterfaceConfig;
 import com.example.demo.automacao.projeto1.context.FeignMethodConfig;
 import com.example.demo.automacao.projeto1.context.FeignParameterConfig;
+import com.example.demo.automacao.projeto1.context.HeaderPadraoComunicacao;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,6 +33,7 @@ public class FeignGenerator {
 	private static final ParamAnnotation[] PARAM_ANNOTATIONS = {
 		ParamAnnotation.REQUEST_PARAM, ParamAnnotation.REQUEST_HEADER, ParamAnnotation.PATH_VARIABLE, ParamAnnotation.REQUEST_BODY
 	};
+	private static final HeaderValueType[] HEADER_VALUE_TYPES = { HeaderValueType.INTEGER, HeaderValueType.LONG, HeaderValueType.STRING };
 
 	// ---------- Helpers de leitura ----------
 
@@ -62,6 +64,17 @@ public class FeignGenerator {
 		return n == 1;
 	}
 
+	private static void coletarDefaultHeaders(Scanner scanner, FeignConfig config) {
+		do {
+			String nomeVariavel = readNonEmptyString(scanner, "Nome variavel: ");
+			int tipoOp = readIntInRange(scanner, "Tipo Variavel: 1 - Integer  2 - Long  3 - String: ", 1, 3);
+			HeaderPadraoComunicacao header = new HeaderPadraoComunicacao();
+			header.nomeVariavel = nomeVariavel;
+			header.tipoVariavel = HEADER_VALUE_TYPES[tipoOp - 1];
+			config.defaultHeaders.add(header);
+		} while (readYesNo(scanner, "Adicionar outro header padrão? (1 - sim / 2 - não): "));
+	}
+
 	// ---------- Fluxo principal ----------
 
 	/**
@@ -72,6 +85,12 @@ public class FeignGenerator {
 		criarEstruturaPastasFeign();
 
 		FeignConfig config = new FeignConfig();
+
+		// Headers Padrões de Comunicação (antes das interfaces)
+		config.hasDefaultHeaders = readYesNo(scanner, "Existe Header Padrões para comunicação? (1 - sim / 2 - não): ");
+		if (config.hasDefaultHeaders) {
+			coletarDefaultHeaders(scanner, config);
+		}
 
 		// (A) Cadastro de interfaces
 		do {
@@ -120,7 +139,7 @@ public class FeignGenerator {
 					"Informe o caminho completo do DTO de retorno (ex: br.com...MeuDto): ");
 			}
 
-			method.hasParameters = readYesNo(scanner, "Existe parâmetros? (1 - sim / 2 - não): ");
+			method.hasParameters = readYesNo(scanner, "Nesse método existe parâmetros de entrada? (1 - sim / 2 - não): ");
 			if (method.hasParameters) {
 				coletarParametros(scanner, method);
 			}
@@ -158,6 +177,12 @@ public class FeignGenerator {
 	/** Imprime o objeto montado em memória para validação/debug */
 	private static void debugImprimirConfig(FeignConfig config) {
 		System.out.println("\n[DEBUG] FeignConfig montado:");
+		System.out.println("  hasDefaultHeaders: " + config.hasDefaultHeaders);
+		if (config.hasDefaultHeaders) {
+			for (HeaderPadraoComunicacao h : config.defaultHeaders) {
+				System.out.println("    Header: " + h.nomeVariavel + " (" + h.tipoVariavel + ")");
+			}
+		}
 		for (FeignInterfaceConfig i : config.interfaces) {
 			System.out.println("  Interface: " + i.interfaceName + " | URL: " + i.baseUrl);
 			for (FeignMethodConfig m : i.methods) {
