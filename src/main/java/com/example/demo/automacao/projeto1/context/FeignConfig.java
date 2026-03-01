@@ -5,11 +5,9 @@ import java.util.List;
 
 /**
  * Configuração coletada para a opção Feign.
+ * Contém a lista de interfaces com seus métodos.
  */
 public class FeignConfig {
 
-	public String nomeClasse;
-	public final List<MetodoConfig> metodos = new ArrayList<>();
-
-	// Campos extras conforme forem implementados
+	public final List<FeignInterfaceConfig> interfaces = new ArrayList<>();
 }
