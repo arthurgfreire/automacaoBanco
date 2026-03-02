@@ -131,6 +131,11 @@ public class FeignClientConfigGenerator {
 		}
 
 		sb.append("\t\t\t\t\ttemplate.header(\"Content-Type\", \"application/json\");\n");
+		sb.append("\t\t\t\t\tLOGGER.info(\"Feign request URL: [{}]\", template.url());\n");
+		sb.append("\t\t\t\t\tLOGGER.info(\"Feign request Headers: [{}]\", template.headers());\n");
+		sb.append("\t\t\t\t\tLOGGER.info(\"Feign request Method: [{}]\", template.method());\n");
+		sb.append("\t\t\t\t\tLOGGER.info(\"Feign request Body: [{}]\", template.body());\n");
+		sb.append("\t\t\t\t\tLOGGER.info(\"Feign request QueryParams: [{}]\", template.queries());\n");
 		sb.append("\t\t\t\t\tLOGGER.debug(\"Headers aplicados ao template Feign\");\n");
 		sb.append("\t\t\t\t}\n");
 		sb.append("\t\t\t}\n");
