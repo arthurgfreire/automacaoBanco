@@ -5,6 +5,7 @@ import com.example.demo.automacao.projeto1.conecta.ConectaGenerator;
 import com.example.demo.automacao.projeto1.feign.FeignGenerator;
 import com.example.demo.automacao.projeto1.feign.application.FeignApplicationYmlGenerator;
 import com.example.demo.automacao.projeto1.feign.feignclientconfig.FeignClientConfigGenerator;
+import com.example.demo.automacao.projeto1.feign.adapter.FeignGatewayImplGenerator;
 import com.example.demo.automacao.projeto1.mensageria.MensageriaGenerator;
 import com.example.demo.automacao.projeto1.bancodedados.BancoDeDadosGenerator;
 import com.example.demo.automacao.projeto1.context.AdapterContext;
@@ -92,6 +93,7 @@ public class automacao {
 		// Gerar application.yml a partir dos FeignConfig coletados
 		new FeignApplicationYmlGenerator().generate(contexto.feignConfigs);
 		new FeignClientConfigGenerator().generate(contexto.feignConfigs);
+		new FeignGatewayImplGenerator().generate(contexto.feignConfigs);
 
 		for (var config : contexto.mensageriaConfigs) {
 			System.out.println("\n>>> Gerando Mensageria (funcionalidade ainda não implementada)");
