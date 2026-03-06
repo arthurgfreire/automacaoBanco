@@ -269,4 +269,6 @@ public class FeignGatewayImplGenerator {
 		}
 		return "String";
 	}
+	
+	
 }
